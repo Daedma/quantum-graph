@@ -4,9 +4,9 @@ project("Quantum graphs" VERSION 0.0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_subdirectory(matplotplusplus)
+# add_subdirectory(matplotplusplus)
 
-add_executable("qgraphs" main.cpp)
+add_executable("qgraphs" main.cpp QuantumGraph.cpp)
 
 target_include_directories(qgraphs PUBLIC "${PROJECT_BINARY_DIR}")
 

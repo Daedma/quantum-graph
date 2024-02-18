@@ -1,0 +1,87 @@
+#include <functional>
+#include <array>
+#include <vector>
+
+
+class QuantumGraph
+{
+	static constexpr double PI = 3.141592653589793;
+
+	static constexpr size_t NUMBER_OF_NODES = 1000;
+
+	using state_type = std::array<double, 2>;
+
+private:
+	std::array<std::function<double(double)>, 3> m_potentials;
+
+public:
+	QuantumGraph(std::function<double(double)> q1, std::function<double(double)> q2, std::function<double(double)> q3) noexcept :
+		m_potentials({ q1, q2, q3 })
+	{}
+
+	std::vector<double> getEigenvalues(double lowerBound, double higherBound)
+	{
+		constexpr double STEP = 0.1;
+		constexpr size_t BINARY_SEARCH_DEPTH = 15;
+
+		std::vector<double> eigenvalues;
+
+		for (; lowerBound < higherBound; lowerBound += STEP)
+		{
+			double detLeft = characteristicDeterminant(lowerBound);
+			double detRight = characteristicDeterminant(lowerBound + STEP);
+			if (detRight * detLeft <= 0)
+			{
+				double left = lowerBound, right = lowerBound + STEP;
+				for (size_t it = 0; it != BINARY_SEARCH_DEPTH; ++it)
+				{
+					double midlle = (left + right) / 2;
+					double detMiddle = characteristicDeterminant(midlle);
+					if (detMiddle * detLeft <= 0)
+					{
+						right = midlle;
+						detRight = detMiddle;
+					}
+					else
+					{
+						left = midlle;
+						detLeft = detMiddle;
+					}
+				}
+				eigenvalues.emplace_back((left + right) / 2);
+			}
+		}
+		return eigenvalues;
+	}
+private:
+	state_type getCosValueAtPi(size_t edge, double lambda)
+	{
+		return getSolutionValues(edge, lambda, { 1, 0 }, NUMBER_OF_NODES);
+	}
+
+	state_type getSinValueAtPi(size_t edge, double lambda)
+	{
+		return getSolutionValues(edge, lambda, { 0, 1 }, NUMBER_OF_NODES);
+	}
+
+	state_type getSolutionValues(size_t edge, double lambda, const state_type& initConditions, size_t numPoints);
+
+	auto create_sturm_liouville_ode(std::function<double(double)> q, double lambda) noexcept
+	{
+		return [q, lambda](const state_type& x, state_type& dxdt, double t) {
+			dxdt[0] = x[1];
+			dxdt[1] = q(t) * x[0] - lambda * x[0];
+			};
+	}
+
+	double characteristicDeterminant(double lambda)
+	{
+		state_type C1 = getCosValueAtPi(1, lambda);
+		state_type S2 = getSinValueAtPi(2, lambda);
+		state_type S3 = getSinValueAtPi(3, lambda);
+
+		return C1[1] * S2[0] * S3[0]
+			+ C1[0] * S2[1] * S3[0]
+			+ C1[0] * S2[0] * S3[1];
+	}
+};
