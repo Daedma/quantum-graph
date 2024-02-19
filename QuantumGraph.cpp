@@ -5,7 +5,7 @@ QuantumGraph::state_type QuantumGraph::getSolutionValues(size_t edge, double lam
 {
 	double step = PI / (numPoints - 1);
 	state_type curx = initConditions;
-	auto slSystem = create_sturm_liouville_ode(m_potentials[edge], lambda);
+	auto slSystem = create_sturm_liouville_ode(m_potentials[edge - 1], lambda);
 	boost::numeric::odeint::runge_kutta4<state_type> rk;
 	for (size_t i = 0; i != numPoints; ++i)
 	{
