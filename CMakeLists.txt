@@ -13,3 +13,11 @@ target_include_directories(qgraphs PUBLIC "${PROJECT_BINARY_DIR}")
 target_include_directories(qgraphs PUBLIC "C:/Libs/boost_1_81_0")
 
 # target_link_libraries(qgraphs PUBLIC matplot)
+
+add_executable("test" test.cpp QuantumGraph.cpp)
+
+target_include_directories(test PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_include_directories(test PUBLIC "C:/Libs/boost_1_81_0")
+
+# target_link_libraries(test PUBLIC matplot)
