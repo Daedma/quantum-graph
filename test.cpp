@@ -49,7 +49,7 @@ state_type getSolutionValues(double lambda, const state_type& initConditions, si
 	state_type curx = initConditions;
 	auto slSystem = getSLSystem(lambda);
 	boost::numeric::odeint::runge_kutta4<state_type> rk;
-	for (size_t i = 0; i != numPoints; ++i)
+	for (size_t i = 0; i != numPoints - 1; ++i)
 	{
 		rk.do_step(slSystem, curx, step * i, step);
 	}
