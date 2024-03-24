@@ -1,6 +1,51 @@
 #include <iostream>
 #include <cmath>
+#include <boost/multi_array.hpp>
 #include "QuantumGraph.hpp"
+
+void checkSequences(const std::vector<double> seq1, const std::vector<double> seq2)
+{
+	boost::multi_array<double, 3> permutations(boost::extents[3][3][std::max(seq1.size(), seq2.size()) / 3 + 2]);
+	for (size_t i = 0; i != 3; ++i)
+	{
+		for (size_t j = 0; j != 3; ++j)
+		{
+			for (size_t n = 0; 3 * n < std::min(seq1.size() - i, seq2.size() - j); ++n)
+			{
+				permutations[i][j][n] = (abs(sqrt(seq1[3 * n + i]) - sqrt(seq2[3 * n + j])) * n);
+			}
+		}
+	}
+	boost::multi_array<bool, 3> decreasing(boost::extents[3][3][std::max(seq1.size(), seq2.size()) / 3 + 2]);
+	for (size_t i = 0; i != 3; ++i)
+	{
+		for (size_t j = 0; j != 3; ++j)
+		{
+			decreasing[i][j][0] = false;
+			for (size_t n = 0; n + 2 < decreasing[i][j].size(); ++n)
+			{
+				decreasing[i][j][n] = (abs(permutations[i][j][n + 1] - permutations[i][j][n + 2]) < abs(permutations[i][j][n] - permutations[i][j][n + 1]));
+			}
+		}
+	}
+	for (size_t i = 0; i != 3; ++i)
+	{
+		for (size_t j = 0; j != 3; ++j)
+		{
+			std::cout << "i=" << i << ", j=" << j << " : ";
+			for (size_t n = 0; n != permutations[i][j].size(); ++n)
+			{
+				std::cout << permutations[i][j][n] << ' ';
+			}
+			std::cout << "\ndecreasing : ";
+			for (size_t n = 0; n != decreasing[i][j].size(); ++n)
+			{
+				std::cout << decreasing[i][j][n] << ' ';
+			}
+			std::cout << "\n";
+		}
+	}
+}
 
 int main()
 {
@@ -9,57 +54,63 @@ int main()
 		[](double) {return 0.;},
 		[](double) {return 0.;}
 	};
-	std::vector<double> eigenvalues0 = graph1.calcEigenvalues(0, 200);
+	std::vector<double> eigenvalues0 = graph1.calcEigenvalues(0, 200, 0.2, 30);
 
 	QuantumGraph graph2{
 		[](double x) {return x;},
 		[](double x) {return -x;},
 		[](double x) {return -sqrt(x);}
 	};
-	std::vector<double> eigenvaluesGraph2 = graph2.calcEigenvalues(0, 200);
+	std::vector<double> eigenvaluesGraph2 = graph2.calcEigenvalues(0, 200, 0.2, 30);
 
 	QuantumGraph graph3{
 		[](double x) {return sin(x);},
 		[](double x) {return exp(-x);},
 		[](double x) {return exp(-pow(x, 2));}
 	};
-	std::vector<double> eigenvaluesGraph3 = graph3.calcEigenvalues(0, 200);
+	std::vector<double> eigenvaluesGraph3 = graph3.calcEigenvalues(0, 200, 0.2, 30);
 
-	for (size_t n = 0; n < std::min(eigenvalues0.size() - 2, eigenvaluesGraph2.size()); n += 3)
-	{
-		std::cout << abs(sqrt(eigenvalues0[n + 2]) - sqrt(eigenvaluesGraph2[n])) * ((n) / 3 + 1) << " ";
-	}
-	std::cout << std::endl;
+	std::cout << "Graph 0 & Graph 2 :\n";
+	checkSequences(eigenvalues0, eigenvaluesGraph2);
 
-	for (size_t n = 1; n < std::min(eigenvalues0.size(), eigenvaluesGraph2.size()); n += 3)
-	{
-		std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph2[n])) * ((n + 2) / 3) << " ";
-	}
-	std::cout << std::endl;
+	std::cout << "Graph 0 & Graph 3 :\n";
+	checkSequences(eigenvalues0, eigenvaluesGraph3);
 
-	for (size_t n = 2; n < std::min(eigenvalues0.size(), eigenvaluesGraph2.size()); n += 3)
-	{
-		std::cout << abs(sqrt(eigenvalues0[n - 2]) - sqrt(eigenvaluesGraph2[n])) * ((n - 1) / 3 + 1) << " ";
-	}
-	std::cout << std::endl;
+	// for (size_t n = 0; n < std::min(eigenvalues0.size() - 2, eigenvaluesGraph2.size()); n += 3)
+	// {
+	// 	std::cout << abs(sqrt(eigenvalues0[n + 2]) - sqrt(eigenvaluesGraph2[n])) * ((n) / 3 + 1) << " ";
+	// }
+	// std::cout << std::endl;
 
-	for (size_t n = 0; n < std::min(eigenvalues0.size(), eigenvaluesGraph3.size()); n += 3)
-	{
-		std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph3[n])) * (n / 3 + 1) << " ";
-	}
-	std::cout << std::endl;
+	// for (size_t n = 1; n < std::min(eigenvalues0.size(), eigenvaluesGraph2.size()); n += 3)
+	// {
+	// 	std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph2[n])) * ((n + 2) / 3) << " ";
+	// }
+	// std::cout << std::endl;
 
-	for (size_t n = 1; n < std::min(eigenvalues0.size(), eigenvaluesGraph3.size()); n += 3)
-	{
-		std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph3[n])) * ((n + 2) / 3) << " ";
-	}
-	std::cout << std::endl;
+	// for (size_t n = 2; n < std::min(eigenvalues0.size(), eigenvaluesGraph2.size()); n += 3)
+	// {
+	// 	std::cout << abs(sqrt(eigenvalues0[n - 2]) - sqrt(eigenvaluesGraph2[n])) * ((n - 1) / 3 + 1) << " ";
+	// }
+	// std::cout << std::endl;
 
-	for (size_t n = 2; n < std::min(eigenvalues0.size(), eigenvaluesGraph3.size()); n += 3)
-	{
-		std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph3[n])) * ((n + 1) / 3) << " ";
-	}
-	std::cout << std::endl;
+	// for (size_t n = 0; n < std::min(eigenvalues0.size(), eigenvaluesGraph3.size()); n += 3)
+	// {
+	// 	std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph3[n])) * (n / 3 + 1) << " ";
+	// }
+	// std::cout << std::endl;
+
+	// for (size_t n = 1; n < std::min(eigenvalues0.size(), eigenvaluesGraph3.size()); n += 3)
+	// {
+	// 	std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph3[n])) * ((n + 2) / 3) << " ";
+	// }
+	// std::cout << std::endl;
+
+	// for (size_t n = 2; n < std::min(eigenvalues0.size(), eigenvaluesGraph3.size()); n += 3)
+	// {
+	// 	std::cout << abs(sqrt(eigenvalues0[n]) - sqrt(eigenvaluesGraph3[n])) * ((n + 1) / 3) << " ";
+	// }
+	// std::cout << std::endl;
 
 	return 0;
 }

@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iostream>
 
-std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double binarySearchDepth) const
+std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, size_t	 binarySearchDepth) const
 {
 	std::vector<double> eigenvalues;
 	for (; lowerBound < higherBound; lowerBound += step)

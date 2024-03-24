@@ -28,7 +28,7 @@ public:
 
 	double getNumberOfNodes() const noexcept { return numberOfNodes; }
 
-	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step = 0.1, double binarySearchDepth = 30) const;
+	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step = 0.1, size_t binarySearchDepth = 30) const;
 
 	GraphFunction calcEigenfunction(double lambda, double tolerance) const;
 
