@@ -9,21 +9,21 @@ int main()
 		[](double) {return 0.;},
 		[](double) {return 0.;}
 	};
-	std::vector<double> eigenvalues0 = graph1.getEigenvalues(0, 200);
+	std::vector<double> eigenvalues0 = graph1.calcEigenvalues(0, 200);
 
 	QuantumGraph graph2{
 		[](double x) {return x;},
 		[](double x) {return -x;},
 		[](double x) {return -sqrt(x);}
 	};
-	std::vector<double> eigenvaluesGraph2 = graph2.getEigenvalues(0, 200);
+	std::vector<double> eigenvaluesGraph2 = graph2.calcEigenvalues(0, 200);
 
 	QuantumGraph graph3{
 		[](double x) {return sin(x);},
 		[](double x) {return exp(-x);},
 		[](double x) {return exp(-pow(x, 2));}
 	};
-	std::vector<double> eigenvaluesGraph3 = graph3.getEigenvalues(0, 200);
+	std::vector<double> eigenvaluesGraph3 = graph3.calcEigenvalues(0, 200);
 
 	for (size_t n = 0; n < std::min(eigenvalues0.size() - 2, eigenvaluesGraph2.size()); n += 3)
 	{
