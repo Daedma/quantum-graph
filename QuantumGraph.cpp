@@ -2,6 +2,7 @@
 #include <boost/numeric/odeint.hpp>
 #include <Mathter/Decompositions/DecomposeSVD.hpp>
 #include <algorithm>
+#include <iostream>
 
 std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double binarySearchDepth) const
 {
@@ -34,10 +35,9 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 	return eigenvalues;
 }
 
-QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda) const
+QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda, double tolerance) const
 {
-	double det = characteristicDeterminant(lambda);
-	std::array<double, 3> fsos = getNullSpaceBasis(getSystemMatrix(lambda), det);
+	std::array<double, 3> fsos = getNullSpaceBasis(getSystemMatrix(lambda), tolerance);
 	if (std::any_of(fsos.cbegin(), fsos.cend(), std::isnan<double>))
 	{
 		return nullptr;
