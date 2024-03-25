@@ -31,3 +31,13 @@ target_include_directories(sequences PUBLIC "${PROJECT_BINARY_DIR}")
 target_include_directories(sequences PUBLIC "C:/Libs/Mathter/include")
 
 target_include_directories(sequences PUBLIC "C:/Libs/boost_1_81_0")
+
+add_executable("asymptotics-1" asymptotics_1.cpp QuantumGraph.cpp)
+
+target_include_directories(asymptotics-1 PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_include_directories(asymptotics-1 PUBLIC "C:/Libs/Mathter/include")
+
+target_include_directories(asymptotics-1 PUBLIC "C:/Libs/boost_1_81_0")
+
+target_link_libraries(asymptotics-1 PUBLIC matplot)

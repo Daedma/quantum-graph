@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iostream>
 
-std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, size_t	 binarySearchDepth) const
+std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, size_t binarySearchDepth) const
 {
 	std::vector<double> eigenvalues;
 	for (; lowerBound < higherBound; lowerBound += step)
@@ -43,8 +43,8 @@ QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda, doubl
 		return nullptr;
 	}
 	std::vector<double> edge1Values = getSolutionValues(1, lambda, { 1, 0 }, numberOfNodes);
-	std::vector<double> edge2Values = getSolutionValues(1, lambda, { 0, 1 }, numberOfNodes);
-	std::vector<double> edge3Values = getSolutionValues(1, lambda, { 0, 1 }, numberOfNodes);
+	std::vector<double> edge2Values = getSolutionValues(2, lambda, { 0, 1 }, numberOfNodes);
+	std::vector<double> edge3Values = getSolutionValues(3, lambda, { 0, 1 }, numberOfNodes);
 
 	return[y = std::array{ std::move(edge1Values), std::move(edge2Values), std::move(edge3Values) }, size = numberOfNodes, fsos]
 	(std::array<double, 3> x)->std::array<double, 3> {
@@ -105,6 +105,7 @@ std::vector<double> QuantumGraph::getSolutionValues(size_t edge, double lambda, 
 
 std::array<double, 3> QuantumGraph::getNullSpaceBasis(const Matrix33& matrix, double tolerance) noexcept
 {
+	// return { 1., -matrix(0, 0) / matrix(0, 1), -matrix(0, 0) / matrix(1, 2) };
 	auto [S, V, D] = mathter::DecomposeSVD(matrix);
 	for (size_t i = 0; i != 3; ++i)
 	{
