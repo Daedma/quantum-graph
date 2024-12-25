@@ -53,3 +53,14 @@ target_include_directories(asymptotics-2 PUBLIC "${PROJECT_BINARY_DIR}")
 target_include_directories(asymptotics-2 PUBLIC "C:/Libs/Mathter/include")
 
 target_include_directories(asymptotics-2 PUBLIC "C:/Libs/boost_1_81_0")
+
+
+add_executable("determinant" determinant.cpp QuantumGraph.cpp)
+
+target_include_directories(determinant PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_include_directories(determinant PUBLIC "C:/Libs/Mathter/include")
+
+target_include_directories(determinant PUBLIC "C:/Libs/boost_1_81_0")
+
+target_link_libraries(determinant PUBLIC matplot)

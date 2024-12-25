@@ -1,6 +1,5 @@
 #include "QuantumGraph.hpp"
 #include <cmath>
-#include <iostream>
 #include <array>
 #include <boost/math/constants/constants.hpp>
 #include <matplot/matplot.h>
