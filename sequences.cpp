@@ -49,30 +49,46 @@ void checkSequences(const std::vector<double> seq1, const std::vector<double> se
 
 int main()
 {
-	constexpr double upperBound = 3000.;
+	constexpr double upperBound = 20.;
+	constexpr double lowerBound = -100.;
 
 	QuantumGraph graph1{
 		[](double) {return 0.;},
 		[](double) {return 0.;},
 		[](double) {return 0.;}
 	};
-	std::vector<double> eigenvalues0 = graph1.calcEigenvalues(0, upperBound, 0.2, 30);
+	std::vector<double> eigenvalues0 = graph1.calcEigenvalues(lowerBound, upperBound, 0.1, 15);
+	std::cout << "Graph 1 eigenvalues : ";
+	for (auto i : eigenvalues0)
+	{
+		std::cout << i << " ";
+	}
 
 	QuantumGraph graph2{
 		[](double x) {return x;},
 		[](double x) {return -x;},
 		[](double x) {return -sqrt(x);}
 	};
-	std::vector<double> eigenvaluesGraph2 = graph2.calcEigenvalues(0, upperBound, 0.2, 30);
+	std::vector<double> eigenvaluesGraph2 = graph2.calcEigenvalues(lowerBound, upperBound, 0.2, 15);
+	std::cout << "\nGraph 2 eigenvalues : ";
+	for (auto i : eigenvaluesGraph2)
+	{
+		std::cout << i << " ";
+	}
 
 	QuantumGraph graph3{
 		[](double x) {return sin(x);},
 		[](double x) {return exp(-x);},
 		[](double x) {return exp(-pow(x, 2));}
 	};
-	std::vector<double> eigenvaluesGraph3 = graph3.calcEigenvalues(0, upperBound, 0.2, 30);
+	std::vector<double> eigenvaluesGraph3 = graph3.calcEigenvalues(lowerBound, upperBound, 0.2, 15);
+	std::cout << "\nGraph 3 eigenvalues : ";
+	for (auto i : eigenvaluesGraph3)
+	{
+		std::cout << i << " ";
+	}
 
-	std::cout << "Graph 0 & Graph 2 :\n";
+	std::cout << "\nGraph 0 & Graph 2 :\n";
 	checkSequences(eigenvalues0, eigenvaluesGraph2);
 
 	std::cout << "Graph 0 & Graph 3 :\n";

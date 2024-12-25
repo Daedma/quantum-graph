@@ -14,6 +14,7 @@ target_include_directories(error_test PUBLIC "C:/Libs/Mathter/include")
 
 target_include_directories(error_test PUBLIC "C:/Libs/boost_1_81_0")
 
+
 add_executable("eigenfunctions" eigenfunctions.cpp QuantumGraph.cpp)
 
 target_include_directories(eigenfunctions PUBLIC "${PROJECT_BINARY_DIR}")
@@ -24,6 +25,7 @@ target_include_directories(eigenfunctions PUBLIC "C:/Libs/boost_1_81_0")
 
 target_link_libraries(eigenfunctions PUBLIC matplot)
 
+
 add_executable("sequences" sequences.cpp QuantumGraph.cpp)
 
 target_include_directories(sequences PUBLIC "${PROJECT_BINARY_DIR}")
@@ -31,6 +33,7 @@ target_include_directories(sequences PUBLIC "${PROJECT_BINARY_DIR}")
 target_include_directories(sequences PUBLIC "C:/Libs/Mathter/include")
 
 target_include_directories(sequences PUBLIC "C:/Libs/boost_1_81_0")
+
 
 add_executable("asymptotics-1" asymptotics_1.cpp QuantumGraph.cpp)
 
@@ -41,3 +44,12 @@ target_include_directories(asymptotics-1 PUBLIC "C:/Libs/Mathter/include")
 target_include_directories(asymptotics-1 PUBLIC "C:/Libs/boost_1_81_0")
 
 target_link_libraries(asymptotics-1 PUBLIC matplot)
+
+
+add_executable("asymptotics-2" asymptotics_2.cpp QuantumGraph.cpp)
+
+target_include_directories(asymptotics-2 PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_include_directories(asymptotics-2 PUBLIC "C:/Libs/Mathter/include")
+
+target_include_directories(asymptotics-2 PUBLIC "C:/Libs/boost_1_81_0")

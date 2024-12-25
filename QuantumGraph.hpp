@@ -37,6 +37,17 @@ public:
 		return calcEigenfunction(lambda, abs(characteristicDeterminant(lambda) * 100.));
 	}
 
+	double characteristicDeterminant(double lambda) const
+	{
+		StateType C1 = getCosValueAtPI(1, lambda);
+		StateType S2 = getSinValueAtPI(2, lambda);
+		StateType S3 = getSinValueAtPI(3, lambda);
+
+		return C1[1] * S2[0] * S3[0]
+			+ C1[0] * S2[1] * S3[0]
+			+ C1[0] * S2[0] * S3[1];
+	}
+
 private:
 	StateType getCosValueAtPI(size_t edge, double lambda) const
 	{
@@ -56,17 +67,6 @@ private:
 			dxdt[0] = x[1];
 			dxdt[1] = q(t) * x[0] - lambda * x[0];
 			};
-	}
-
-	double characteristicDeterminant(double lambda) const
-	{
-		StateType C1 = getCosValueAtPI(1, lambda);
-		StateType S2 = getSinValueAtPI(2, lambda);
-		StateType S3 = getSinValueAtPI(3, lambda);
-
-		return C1[1] * S2[0] * S3[0]
-			+ C1[0] * S2[1] * S3[0]
-			+ C1[0] * S2[0] * S3[1];
 	}
 
 	Matrix33 getSystemMatrix(double lambda) const
