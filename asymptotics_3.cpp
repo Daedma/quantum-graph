@@ -47,11 +47,11 @@ double get_null_ev(int n, int k) noexcept
 
 int main(int argc, char const* argv[])
 {
-	constexpr double lowerBound = 24700.;
-	constexpr double upperBound = 25000.;
+	constexpr double lowerBound = 24600.;
+	constexpr double upperBound = 25100.;
 	constexpr double step = 50.;
-	constexpr size_t depth = 20;
-	constexpr size_t numberOfNobes = 800;
+	constexpr size_t depth = 25;
+	constexpr size_t numberOfNobes = 6000;
 
 	if (argc != 2)
 	{
@@ -65,7 +65,7 @@ int main(int argc, char const* argv[])
 		std::to_string(depth) + ".csv";
 
 	std::ofstream ofs{ filename };
-	ofs << std::setprecision(10);
+	ofs << std::setprecision(17);
 	ofs << "a1, a2, a3, eigenvalues,\n";
 	ofs << "0., 0., 0.,";
 	for (int i = 0;;++i)
@@ -96,7 +96,7 @@ int main(int argc, char const* argv[])
 		graph.setNumberOfNodes(numberOfNobes);
 		auto ev = graph.calcEigenvalues(lowerBound, upperBound, step, depth);
 		std::ofstream ofs{ filename, std::ios::app };
-		ofs << std::setprecision(10);
+		ofs << std::setprecision(17);
 		ofs << a1 << ',' << a2 << ',' << a3 << ',';
 		for (auto e : ev)
 			ofs << e << ',';

@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_subdirectory(matplotplusplus-1.2.1)
 
+
 add_executable("error_test" error_test.cpp QuantumGraph.cpp)
 
 target_include_directories(error_test PUBLIC "${PROJECT_BINARY_DIR}")
@@ -73,3 +74,5 @@ target_include_directories(asymptotics-3 PUBLIC "${PROJECT_BINARY_DIR}")
 target_include_directories(asymptotics-3 PUBLIC "C:/Libs/Mathter/include")
 
 target_include_directories(asymptotics-3 PUBLIC "C:/Libs/boost_1_81_0")
+
+target_compile_definitions(asymptotics-3 PUBLIC BOOST_JSON_NO_LIB)
