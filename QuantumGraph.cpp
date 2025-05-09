@@ -5,38 +5,71 @@
 
 #include <algorithm>
 #include <thread>
-#include <mutex>
 #include <future>
 
 std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const
 {
 	std::vector<double> eigenvalues;
-	for (; lowerBound < higherBound; lowerBound += step)
+	size_t num_threads = std::thread::hardware_concurrency(); // Количество доступных потоков
+	std::vector<std::future<std::vector<double>>> futures;
+
+	// Разделение диапазона на поддиапазоны для параллельной обработки
+	double range = higherBound - lowerBound;
+	double subrange = range / num_threads;
+
+	for (size_t i = 0; i != num_threads; ++i)
 	{
-		double detLeft = characteristicDeterminant(lowerBound, error);
-		double detRight = characteristicDeterminant(lowerBound + step, error);
-		if (detRight * detLeft <= 0)
-		{
-			double detError = error;
-			double left = lowerBound, right = lowerBound + step;
-			for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it, detError *= 0.5)
+		double subLower = lowerBound + i * subrange;
+		double subHigher = (i == num_threads - 1) ? higherBound : subLower + subrange;
+
+		futures.emplace_back(std::async(std::launch::async, [this, subLower, subHigher, step, error, maxIter]() {
+			std::vector<double> local_eigenvalues;
+			for (double current = subLower; current < subHigher; current += step)
 			{
-				double midlle = (left + right) * 0.5;
-				double detMiddle = characteristicDeterminant(midlle, detError);
-				if (detMiddle * detLeft <= 0)
+				double detLeft = characteristicDeterminant(current, error);
+				double detRight = characteristicDeterminant(current + step, error);
+				if (detRight * detLeft <= 0)
 				{
-					right = midlle;
-					detRight = detMiddle;
-				}
-				else
-				{
-					left = midlle;
-					detLeft = detMiddle;
+					double detError = error;
+					double left = current, right = current + step;
+					for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it)
+					{
+						double midlle = (left + right) * 0.5;
+						double detMiddle = characteristicDeterminant(midlle, detError);
+						while ((detMiddle - detError) * (detMiddle + detError) <= 0)
+						{
+							detError *= 0.5;
+							detMiddle = characteristicDeterminant(midlle, detError);
+						}
+						if (detMiddle * detLeft <= 0)
+						{
+							right = midlle;
+							detRight = detMiddle;
+						}
+						else
+						{
+							left = midlle;
+							detLeft = detMiddle;
+						}
+					}
+					local_eigenvalues.emplace_back((left + right) * 0.5);
 				}
 			}
-			eigenvalues.emplace_back((left + right) * 0.5);
-		}
+			return local_eigenvalues;
+			}));
 	}
+
+	// Сбор результатов из всех потоков
+	for (auto& future : futures)
+	{
+		std::vector<double> local_eigenvalues = future.get();
+		eigenvalues.insert(eigenvalues.end(), local_eigenvalues.begin(), local_eigenvalues.end());
+	}
+
+	// Сортировка и удаление дубликатов
+	std::sort(eigenvalues.begin(), eigenvalues.end());
+	eigenvalues.erase(std::unique(eigenvalues.begin(), eigenvalues.end()), eigenvalues.end());
+
 	return eigenvalues;
 }
 
@@ -124,17 +157,10 @@ double QuantumGraph::characteristicDeterminant(double lambda, double error) cons
 	// Начальная погрешность для вычисления C1, S2, S3
 	double initial_error = error / 3.0;
 
-	// Будущие значения для параллельного вычисления
-	auto future_C1 = std::async(std::launch::async, &QuantumGraph::getCosValueAtPI, this, 1, lambda, initial_error);
-
-	auto future_S2 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 2, lambda, initial_error);
-
-	auto future_S3 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 3, lambda, initial_error);
-
-	// Получение результатов параллельных вычислений
-	StateType C1 = future_C1.get();
-	StateType S2 = future_S2.get();
-	StateType S3 = future_S3.get();
+	// Первое вычисление значений с начальной погрешностью
+	StateType C1 = getCosValueAtPI(1, lambda, initial_error);
+	StateType S2 = getSinValueAtPI(2, lambda, initial_error);
+	StateType S3 = getSinValueAtPI(3, lambda, initial_error);
 
 	// Вычисление определителя
 	double result = C1[1] * S2[0] * S3[0]
@@ -153,17 +179,10 @@ double QuantumGraph::characteristicDeterminant(double lambda, double error) cons
 	{
 		double corrected_error = error / (3.0 * max_coefficient);
 
-		// Повторное параллельное вычисление значений с скорректированной погрешностью
-		auto future_C1 = std::async(std::launch::async, &QuantumGraph::getCosValueAtPI, this, 1, lambda, corrected_error);
-
-		auto future_S2 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 2, lambda, corrected_error);
-
-		auto future_S3 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 3, lambda, corrected_error);
-
-		// Получение результатов параллельных вычислений
-		C1 = future_C1.get();
-		S2 = future_S2.get();
-		S3 = future_S3.get();
+		// Повторное вычисление значений с скорректированной погрешностью
+		C1 = getCosValueAtPI(1, lambda, corrected_error);
+		S2 = getSinValueAtPI(2, lambda, corrected_error);
+		S3 = getSinValueAtPI(3, lambda, corrected_error);
 
 		// Повторное вычисление определителя
 		result = C1[1] * S2[0] * S3[0]
