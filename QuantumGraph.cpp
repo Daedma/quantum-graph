@@ -4,37 +4,6 @@
 #include <algorithm>
 #include <iostream>
 
-std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, size_t binarySearchDepth) const
-{
-	std::vector<double> eigenvalues;
-	for (; lowerBound < higherBound; lowerBound += step)
-	{
-		double detLeft = characteristicDeterminant(lowerBound);
-		double detRight = characteristicDeterminant(lowerBound + step);
-		if (detRight * detLeft <= 0)
-		{
-			double left = lowerBound, right = lowerBound + step;
-			for (size_t it = 0; it != binarySearchDepth; ++it)
-			{
-				double midlle = (left + right) / 2;
-				double detMiddle = characteristicDeterminant(midlle);
-				if (detMiddle * detLeft <= 0)
-				{
-					right = midlle;
-					detRight = detMiddle;
-				}
-				else
-				{
-					left = midlle;
-					detLeft = detMiddle;
-				}
-			}
-			eigenvalues.emplace_back((left + right) / 2);
-		}
-	}
-	return eigenvalues;
-}
-
 std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const
 {
 	std::vector<double> eigenvalues;
@@ -50,7 +19,7 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 			for (size_t it = 0; it != maxIter && (right - left) > 2 * tolerance; ++it)
 			{
 				double midlle = (left + right) / 2;
-				double detMiddle = characteristicDeterminant(midlle);
+				double detMiddle = characteristicDeterminant(midlle, detError);
 				if (detMiddle * detLeft <= 0)
 				{
 					right = midlle;
@@ -68,7 +37,7 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 	return eigenvalues;
 }
 
-QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda, double tolerance) const
+QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda, size_t numberOfNodes, double tolerance) const
 {
 	std::array<double, 3> fsos = getNullSpaceBasis(getSystemMatrix(lambda), tolerance);
 	if (std::any_of(fsos.cbegin(), fsos.cend(), std::isnan<double>))
@@ -107,19 +76,6 @@ QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda, doubl
 	};
 }
 
-QuantumGraph::StateType QuantumGraph::getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, size_t numPoints) const
-{
-	double step = PI / (numPoints - 1);
-	StateType curx = initConditions;
-	auto slSystem = createSturmLiouvilleODE(m_potentials[edge - 1], lambda);
-	boost::numeric::odeint::runge_kutta4<StateType> rk;
-	for (size_t i = 0; i != numPoints - 1; ++i)
-	{
-		rk.do_step(slSystem, curx, step * i, step);
-	}
-	return curx;
-}
-
 QuantumGraph::StateType QuantumGraph::getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, double error, size_t baseNumPoints) const
 {
 	double initialStep = PI / (baseNumPoints - 1);
@@ -129,7 +85,6 @@ QuantumGraph::StateType QuantumGraph::getSolutionValuesAtPI(size_t edge, double 
 	boost::numeric::odeint::integrate_const(stepper, system, x, 0., PI, initialStep);
 	return x;
 }
-
 
 std::vector<double> QuantumGraph::getSolutionValues(size_t edge, double lambda, const StateType& initConditions, size_t numPoints) const
 {

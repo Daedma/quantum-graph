@@ -2,7 +2,15 @@
 #include <functional>
 #include <array>
 #include <vector>
+#include <optional>
 #include <Mathter/Matrix.hpp>
+
+// TODO : Распараллелить вычисление C1, S2, S3 при расчете определителя
+// TODO : Распараллелить поиск собственных значений
+// TODO : Добавить обработку случая кратных собственных значений
+// TODO : Добавить параметризацию граничных условий
+// TODO : Подумать над адаптивным шагом при поиске собственных значений
+
 
 class QuantumGraph
 {
@@ -13,8 +21,6 @@ class QuantumGraph
 	using Matrix33 = mathter::Matrix<double, 3, 3, mathter::eMatrixOrder::PRECEDE_VECTOR>;
 
 private:
-	size_t numberOfNodes = 1000;
-
 	std::array<std::function<double(double)>, 3> m_potentials;
 
 public:
@@ -24,45 +30,13 @@ public:
 		m_potentials({ q1, q2, q3 })
 	{}
 
-	void setNumberOfNodes(size_t num) noexcept { numberOfNodes = num; }
-
-	double getNumberOfNodes() const noexcept { return numberOfNodes; }
-
-	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step = 0.1, size_t binarySearchDepth = 30) const;
-
 	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const;
 
-	GraphFunction calcEigenfunction(double lambda, double tolerance) const;
-
-	GraphFunction calcEigenfunction(double lambda) const
-	{
-		return calcEigenfunction(lambda, abs(characteristicDeterminant(lambda) * 100.));
-	}
-
-	double characteristicDeterminant(double lambda) const
-	{
-		StateType C1 = getCosValueAtPI(1, lambda);
-		StateType S2 = getSinValueAtPI(2, lambda);
-		StateType S3 = getSinValueAtPI(3, lambda);
-
-		return C1[1] * S2[0] * S3[0]
-			+ C1[0] * S2[1] * S3[0]
-			+ C1[0] * S2[0] * S3[1];
-	}
+	GraphFunction calcEigenfunction(double lambda, size_t numOfNodes, double tolerance) const;
 
 	double characteristicDeterminant(double lambda, double error) const;
 
 private:
-	StateType getCosValueAtPI(size_t edge, double lambda) const
-	{
-		return getSolutionValuesAtPI(edge, lambda, { 1, 0 }, numberOfNodes);
-	}
-
-	StateType getSinValueAtPI(size_t edge, double lambda) const
-	{
-		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, numberOfNodes);
-	}
-
 	StateType getCosValueAtPI(size_t edge, double lambda, double error) const
 	{
 		return getSolutionValuesAtPI(edge, lambda, { 1, 0 }, error, 100);
@@ -72,8 +46,6 @@ private:
 	{
 		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, error, 100);
 	}
-
-	StateType getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, size_t numPoints) const;
 
 	StateType getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, double error, size_t baseNumPoints) const;
 
@@ -87,9 +59,10 @@ private:
 
 	Matrix33 getSystemMatrix(double lambda) const
 	{
-		StateType C1 = getCosValueAtPI(1, lambda);
-		StateType S2 = getSinValueAtPI(2, lambda);
-		StateType S3 = getSinValueAtPI(3, lambda);
+		constexpr double error = 1.e-3;
+		StateType C1 = getCosValueAtPI(1, lambda, error);
+		StateType S2 = getSinValueAtPI(2, lambda, error);
+		StateType S3 = getSinValueAtPI(3, lambda, error);
 
 		return {
 			C1[0], -S2[0], 0.,
