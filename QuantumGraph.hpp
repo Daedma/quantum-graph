@@ -30,7 +30,7 @@ public:
 
 	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step = 0.1, size_t binarySearchDepth = 30) const;
 
-	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step = 0.1, double error, size_t maxIter) const;
+	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const;
 
 	GraphFunction calcEigenfunction(double lambda, double tolerance) const;
 
@@ -65,12 +65,12 @@ private:
 
 	StateType getCosValueAtPI(size_t edge, double lambda, double error) const
 	{
-		return getSolutionValuesAtPI(edge, lambda, { 1, 0 }, error, 2);
+		return getSolutionValuesAtPI(edge, lambda, { 1, 0 }, error, 100);
 	}
 
 	StateType getSinValueAtPI(size_t edge, double lambda, double error) const
 	{
-		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, error, 2);
+		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, error, 100);
 	}
 
 	StateType getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, size_t numPoints) const;

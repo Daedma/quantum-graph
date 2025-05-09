@@ -105,7 +105,7 @@ int main(int argc, char const* argv[])
 		[](double) {return 0.;},
 		[](double) {return 0.;}
 	};
-	std::vector<double> eigenvaluesNum = graph1.calcEigenvalues(0, 100, 0.2, 30);
+	std::vector<double> eigenvaluesNum = graph1.calcEigenvalues(0., 100., 0.2, 30);
 	std::vector<double> eigenvaluesAnal(eigenvaluesNum.size() + 1); // first eigenvalue is missed
 	for (size_t i = 0; i != eigenvaluesAnal.size(); ++i)
 	{
