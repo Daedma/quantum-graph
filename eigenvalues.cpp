@@ -32,11 +32,11 @@ double get_null_ev(int n, int k) noexcept
 
 int main(int argc, char const* argv[])
 {
-	constexpr double lowerBound = 0.0;
-	constexpr double upperBound = 100.0;
-	constexpr double step = 0.1;
-	constexpr double error = 1.e-3;
-	constexpr size_t maxIter = 100;
+	constexpr double lowerBound = 99.0;
+	constexpr double upperBound = 200.0;
+	constexpr double step = 5.;
+	constexpr double error = 1.e-8;
+	constexpr size_t maxIter = 1000;
 
 	std::vector<double> analytical;
 	for (int i = 0;;++i)

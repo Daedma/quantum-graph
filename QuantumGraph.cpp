@@ -1,24 +1,27 @@
 #include "QuantumGraph.hpp"
+
 #include <boost/numeric/odeint.hpp>
 #include <Mathter/Decompositions/DecomposeSVD.hpp>
+
 #include <algorithm>
-#include <iostream>
+#include <thread>
+#include <mutex>
+#include <future>
 
 std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const
 {
 	std::vector<double> eigenvalues;
-	double detError = error * 0.1; // На порядок меньше, чем целевая погрешность, для исключения влияния на итоговую погрешность
-	double tolerance = error;
 	for (; lowerBound < higherBound; lowerBound += step)
 	{
-		double detLeft = characteristicDeterminant(lowerBound, detError);
-		double detRight = characteristicDeterminant(lowerBound + step, detError);
+		double detLeft = characteristicDeterminant(lowerBound, error);
+		double detRight = characteristicDeterminant(lowerBound + step, error);
 		if (detRight * detLeft <= 0)
 		{
+			double detError = error;
 			double left = lowerBound, right = lowerBound + step;
-			for (size_t it = 0; it != maxIter && (right - left) > 2 * tolerance; ++it)
+			for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it, detError *= 0.5)
 			{
-				double midlle = (left + right) / 2;
+				double midlle = (left + right) * 0.5;
 				double detMiddle = characteristicDeterminant(midlle, detError);
 				if (detMiddle * detLeft <= 0)
 				{
@@ -121,10 +124,17 @@ double QuantumGraph::characteristicDeterminant(double lambda, double error) cons
 	// Начальная погрешность для вычисления C1, S2, S3
 	double initial_error = error / 3.0;
 
-	// Первое вычисление значений с начальной погрешностью
-	StateType C1 = getCosValueAtPI(1, lambda, initial_error);
-	StateType S2 = getSinValueAtPI(2, lambda, initial_error);
-	StateType S3 = getSinValueAtPI(3, lambda, initial_error);
+	// Будущие значения для параллельного вычисления
+	auto future_C1 = std::async(std::launch::async, &QuantumGraph::getCosValueAtPI, this, 1, lambda, initial_error);
+
+	auto future_S2 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 2, lambda, initial_error);
+
+	auto future_S3 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 3, lambda, initial_error);
+
+	// Получение результатов параллельных вычислений
+	StateType C1 = future_C1.get();
+	StateType S2 = future_S2.get();
+	StateType S3 = future_S3.get();
 
 	// Вычисление определителя
 	double result = C1[1] * S2[0] * S3[0]
@@ -143,10 +153,17 @@ double QuantumGraph::characteristicDeterminant(double lambda, double error) cons
 	{
 		double corrected_error = error / (3.0 * max_coefficient);
 
-		// Повторное вычисление значений с скорректированной погрешностью
-		C1 = getCosValueAtPI(1, lambda, corrected_error);
-		S2 = getSinValueAtPI(2, lambda, corrected_error);
-		S3 = getSinValueAtPI(3, lambda, corrected_error);
+		// Повторное параллельное вычисление значений с скорректированной погрешностью
+		auto future_C1 = std::async(std::launch::async, &QuantumGraph::getCosValueAtPI, this, 1, lambda, corrected_error);
+
+		auto future_S2 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 2, lambda, corrected_error);
+
+		auto future_S3 = std::async(std::launch::async, &QuantumGraph::getSinValueAtPI, this, 3, lambda, corrected_error);
+
+		// Получение результатов параллельных вычислений
+		C1 = future_C1.get();
+		S2 = future_S2.get();
+		S3 = future_S3.get();
 
 		// Повторное вычисление определителя
 		result = C1[1] * S2[0] * S3[0]
