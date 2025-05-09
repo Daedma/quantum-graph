@@ -35,6 +35,39 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 	return eigenvalues;
 }
 
+std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const
+{
+	std::vector<double> eigenvalues;
+	double detError = error * 0.1; // На порядок меньше, чем целевая погрешность, для исключения влияния на итоговую погрешность
+	double tolerance = error;
+	for (; lowerBound < higherBound; lowerBound += step)
+	{
+		double detLeft = characteristicDeterminant(lowerBound, detError);
+		double detRight = characteristicDeterminant(lowerBound + step, detError);
+		if (detRight * detLeft <= 0)
+		{
+			double left = lowerBound, right = lowerBound + step;
+			for (size_t it = 0; it != maxIter && (right - left) > 2 * tolerance; ++it)
+			{
+				double midlle = (left + right) / 2;
+				double detMiddle = characteristicDeterminant(midlle);
+				if (detMiddle * detLeft <= 0)
+				{
+					right = midlle;
+					detRight = detMiddle;
+				}
+				else
+				{
+					left = midlle;
+					detLeft = detMiddle;
+				}
+			}
+			eigenvalues.emplace_back((left + right) * 0.5);
+		}
+	}
+	return eigenvalues;
+}
+
 QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda, double tolerance) const
 {
 	std::array<double, 3> fsos = getNullSpaceBasis(getSystemMatrix(lambda), tolerance);
@@ -87,6 +120,17 @@ QuantumGraph::StateType QuantumGraph::getSolutionValuesAtPI(size_t edge, double 
 	return curx;
 }
 
+QuantumGraph::StateType QuantumGraph::getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, double error, size_t baseNumPoints) const
+{
+	double initialStep = PI / (baseNumPoints - 1);
+	StateType x = initConditions;
+	auto system = createSturmLiouvilleODE(m_potentials[edge - 1], lambda);
+	auto stepper = boost::numeric::odeint::make_dense_output(error, error, boost::numeric::odeint::runge_kutta_dopri5<StateType>());
+	boost::numeric::odeint::integrate_const(stepper, system, x, 0., PI, initialStep);
+	return x;
+}
+
+
 std::vector<double> QuantumGraph::getSolutionValues(size_t edge, double lambda, const StateType& initConditions, size_t numPoints) const
 {
 	double step = PI / (numPoints - 1);
@@ -117,3 +161,43 @@ std::array<double, 3> QuantumGraph::getNullSpaceBasis(const Matrix33& matrix, do
 	return std::array<double, 3>{NAN, NAN, NAN};
 }
 
+double QuantumGraph::characteristicDeterminant(double lambda, double error) const
+{
+	// Начальная погрешность для вычисления C1, S2, S3
+	double initial_error = error / 3.0;
+
+	// Первое вычисление значений с начальной погрешностью
+	StateType C1 = getCosValueAtPI(1, lambda, initial_error);
+	StateType S2 = getSinValueAtPI(2, lambda, initial_error);
+	StateType S3 = getSinValueAtPI(3, lambda, initial_error);
+
+	// Вычисление определителя
+	double result = C1[1] * S2[0] * S3[0]
+		+ C1[0] * S2[1] * S3[0]
+		+ C1[0] * S2[0] * S3[1];
+
+	// Оценка погрешности на основе частных производных
+	double delta_C1 = std::abs(S2[0] * S3[0]) + std::abs(S2[1] * S3[0] + S2[0] * S3[1]);
+	double delta_S2 = std::abs(C1[1] * S3[0] + C1[0] * S3[1]) + std::abs(C1[0] * S3[0]);
+	double delta_S3 = std::abs(C1[1] * S2[0] + C1[0] * S2[1]) + std::abs(C1[0] * S2[0]);
+
+	double max_coefficient = std::max({ delta_C1, delta_S2, delta_S3 });
+
+	// Корректировка погрешности, если оценка превышает заданную погрешность
+	if (max_coefficient * initial_error > error)
+	{
+		double corrected_error = error / (3.0 * max_coefficient);
+
+		// Повторное вычисление значений с скорректированной погрешностью
+		C1 = getCosValueAtPI(1, lambda, corrected_error);
+		S2 = getSinValueAtPI(2, lambda, corrected_error);
+		S3 = getSinValueAtPI(3, lambda, corrected_error);
+
+		// Повторное вычисление определителя
+		result = C1[1] * S2[0] * S3[0]
+			+ C1[0] * S2[1] * S3[0]
+			+ C1[0] * S2[0] * S3[1];
+	}
+
+	return result;
+}

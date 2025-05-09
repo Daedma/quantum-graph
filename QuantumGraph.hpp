@@ -30,6 +30,8 @@ public:
 
 	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step = 0.1, size_t binarySearchDepth = 30) const;
 
+	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step = 0.1, double error, size_t maxIter) const;
+
 	GraphFunction calcEigenfunction(double lambda, double tolerance) const;
 
 	GraphFunction calcEigenfunction(double lambda) const
@@ -48,6 +50,8 @@ public:
 			+ C1[0] * S2[0] * S3[1];
 	}
 
+	double characteristicDeterminant(double lambda, double error) const;
+
 private:
 	StateType getCosValueAtPI(size_t edge, double lambda) const
 	{
@@ -59,7 +63,19 @@ private:
 		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, numberOfNodes);
 	}
 
+	StateType getCosValueAtPI(size_t edge, double lambda, double error) const
+	{
+		return getSolutionValuesAtPI(edge, lambda, { 1, 0 }, error, 2);
+	}
+
+	StateType getSinValueAtPI(size_t edge, double lambda, double error) const
+	{
+		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, error, 2);
+	}
+
 	StateType getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, size_t numPoints) const;
+
+	StateType getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, double error, size_t baseNumPoints) const;
 
 	static auto createSturmLiouvilleODE(std::function<double(double)> q, double lambda) noexcept
 	{

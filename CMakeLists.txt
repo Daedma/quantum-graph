@@ -76,3 +76,14 @@ target_include_directories(asymptotics-3 PUBLIC "C:/Libs/Mathter/include")
 target_include_directories(asymptotics-3 PUBLIC "C:/Libs/boost_1_81_0")
 
 target_compile_definitions(asymptotics-3 PUBLIC BOOST_JSON_NO_LIB)
+
+
+add_executable("eigenvalues" eigenvalues.cpp QuantumGraph.cpp)
+
+target_include_directories(eigenvalues PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_include_directories(eigenvalues PUBLIC "C:/Libs/Mathter/include")
+
+target_include_directories(eigenvalues PUBLIC "C:/Libs/boost_1_81_0")
+
+target_compile_definitions(eigenvalues PUBLIC BOOST_JSON_NO_LIB)
