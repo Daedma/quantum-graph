@@ -85,43 +85,27 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 	return eigenvalues;
 }
 
-QuantumGraph::GraphFunction QuantumGraph::calcEigenfunction(double lambda, size_t numberOfNodes, double tolerance) const
+std::vector<QuantumGraph::GraphFunction> QuantumGraph::calcEigenfunction(double lambda, size_t numberOfNodes, double error) const
 {
-	std::array<double, 3> fsos = getNullSpaceBasis(getSystemMatrix(lambda), tolerance);
-	if (std::any_of(fsos.cbegin(), fsos.cend(), std::isnan<double>))
+	// fsos - fundametal system of solutions
+	std::vector<std::array<double, 3>> fsos = getNullSpaceBasis(getSystemMatrix(lambda, error * 1.e-2), error);
+	if (fsos.empty())
 	{
-		return nullptr;
+		return {};
 	}
 	std::vector<double> edge1Values = getSolutionValues(1, lambda, { 1, 0 }, numberOfNodes);
 	std::vector<double> edge2Values = getSolutionValues(2, lambda, { 0, 1 }, numberOfNodes);
 	std::vector<double> edge3Values = getSolutionValues(3, lambda, { 0, 1 }, numberOfNodes);
 
-	return[y = std::array{ std::move(edge1Values), std::move(edge2Values), std::move(edge3Values) }, size = numberOfNodes, fsos]
-	(std::array<double, 3> x)->std::array<double, 3> {
-		constexpr double PI_INV = 1.0 / 3.14159265358979323846;
+	std::vector<GraphFunction> eigenfunctions;
+	eigenfunctions.reserve(fsos.size());
 
-		double x1 = x[0] * PI_INV;
-		double x2 = x[1] * PI_INV;
-		double x3 = x[2] * PI_INV;
+	for (const auto& vec : fsos)
+	{
+		eigenfunctions.emplace_back(createEigenfunction(edge1Values, edge2Values, edge3Values, vec));
+	}
 
-		size_t index1 = static_cast<size_t>(x1 * (size - 1));
-		size_t index2 = static_cast<size_t>(x2 * (size - 1));
-		size_t index3 = static_cast<size_t>(x3 * (size - 1));
-
-		double y1 = y[0][index1];
-		double y2 = y[1][index2];
-		double y3 = y[2][index3];
-
-		double fraction1 = x1 * (size - 1) - index1;
-		double fraction2 = x2 * (size - 1) - index2;
-		double fraction3 = x3 * (size - 1) - index3;
-
-		double interpolatedValue1 = (1 - fraction1) * y1 + fraction1 * (index1 + 1 < size ? y[0][index1 + 1] : y1);
-		double interpolatedValue2 = (1 - fraction2) * y2 + fraction2 * (index2 + 1 < size ? y[1][index2 + 1] : y2);
-		double interpolatedValue3 = (1 - fraction3) * y3 + fraction3 * (index3 + 1 < size ? y[2][index3 + 1] : y3);
-
-		return { fsos[0] * interpolatedValue1, fsos[1] * interpolatedValue2, fsos[2] * interpolatedValue3 };
-	};
+	return eigenfunctions;
 }
 
 QuantumGraph::StateType QuantumGraph::getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, double error, size_t baseNumPoints) const
@@ -150,18 +134,50 @@ std::vector<double> QuantumGraph::getSolutionValues(size_t edge, double lambda, 
 	return values;
 }
 
-std::array<double, 3> QuantumGraph::getNullSpaceBasis(const Matrix33& matrix, double tolerance) noexcept
+QuantumGraph::GraphFunction QuantumGraph::createEigenfunction(const std::vector<double>& edge1Values, const std::vector<double>& edge2Values, const std::vector<double>& edge3Values, const std::array<double, 3>& fsos) const
 {
-	// return { 1., -matrix(0, 0) / matrix(0, 1), -matrix(0, 0) / matrix(1, 2) };
+	return[y = std::array{ edge1Values, edge2Values, edge3Values }, fsos]
+	(std::array<double, 3> x)->std::array<double, 3> {
+		constexpr double PI_INV = 1.0 / 3.14159265358979323846;
+
+		size_t size = std::min({ y[0].size(), y[1].size(), y[2].size() });
+
+		double x1 = x[0] * PI_INV;
+		double x2 = x[1] * PI_INV;
+		double x3 = x[2] * PI_INV;
+
+		size_t index1 = static_cast<size_t>(x1 * (size - 1));
+		size_t index2 = static_cast<size_t>(x2 * (size - 1));
+		size_t index3 = static_cast<size_t>(x3 * (size - 1));
+
+		double y1 = y[0][index1];
+		double y2 = y[1][index2];
+		double y3 = y[2][index3];
+
+		double fraction1 = x1 * (size - 1) - index1;
+		double fraction2 = x2 * (size - 1) - index2;
+		double fraction3 = x3 * (size - 1) - index3;
+
+		double interpolatedValue1 = (1 - fraction1) * y1 + fraction1 * (index1 + 1 < size ? y[0][index1 + 1] : y1);
+		double interpolatedValue2 = (1 - fraction2) * y2 + fraction2 * (index2 + 1 < size ? y[1][index2 + 1] : y2);
+		double interpolatedValue3 = (1 - fraction3) * y3 + fraction3 * (index3 + 1 < size ? y[2][index3 + 1] : y3);
+
+		return { fsos[0] * interpolatedValue1, fsos[1] * interpolatedValue2, fsos[2] * interpolatedValue3 };
+	};
+}
+
+std::vector<std::array<double, 3>> QuantumGraph::getNullSpaceBasis(const Matrix33& matrix, double tolerance) noexcept
+{
+	std::vector<std::array<double, 3>> basis;
 	auto [S, V, D] = mathter::DecomposeSVD(matrix);
 	for (size_t i = 0; i != 3; ++i)
 	{
 		if (abs(V(i, i)) <= tolerance)
 		{
-			return { D(i, 0), D(i, 1), D(i, 2) };
+			basis.push_back({ D(i, 0), D(i, 1), D(i, 2) });
 		}
 	}
-	return std::array<double, 3>{NAN, NAN, NAN};
+	return basis;
 }
 
 double QuantumGraph::characteristicDeterminant(double lambda, double error) const

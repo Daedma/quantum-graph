@@ -13,8 +13,8 @@ void plotEigenfunction(const QuantumGraph& graph,
 	{
 		return;
 	}
-	QuantumGraph::GraphFunction eigenfunction = graph.calcEigenfunction(eigenvalues[3]);
-	if (eigenfunction)
+	std::vector<QuantumGraph::GraphFunction> eigenfunctions = graph.calcEigenfunction(eigenvalues[3], 100, 1.e-6);
+	for (const auto& eigenfunction : eigenfunctions)
 	{
 		auto func1 = [eigenfunction](double x) {return eigenfunction({ x, 0, 0 })[0];};
 		auto func2 = [eigenfunction](double x) {return eigenfunction({ 0, x, 0 })[1];};

@@ -35,7 +35,7 @@ public:
 		return calcEigenvalues(lowerBound, higherBound, 2, 0.1, error, 1000);
 	}
 
-	GraphFunction calcEigenfunction(double lambda, size_t numOfNodes, double tolerance) const;
+	std::vector<GraphFunction> calcEigenfunction(double lambda, size_t numOfNodes, double error) const;
 
 	double characteristicDeterminant(double lambda, double error) const;
 
@@ -60,9 +60,8 @@ private:
 			};
 	}
 
-	Matrix33 getSystemMatrix(double lambda) const
+	Matrix33 getSystemMatrix(double lambda, double error) const
 	{
-		constexpr double error = 1.e-3;
 		StateType C1 = getCosValueAtPI(1, lambda, error);
 		StateType S2 = getSinValueAtPI(2, lambda, error);
 		StateType S3 = getSinValueAtPI(3, lambda, error);
@@ -95,5 +94,7 @@ private:
 		return characteristicDeterminantSignSafe(lambda, localError, true);
 	}
 
-	static std::array<double, 3> getNullSpaceBasis(const Matrix33& matrix, double tolerance = 1.e-10) noexcept;
+	GraphFunction createEigenfunction(const std::vector<double>& edge1Values, const std::vector<double>& edge2Values, const std::vector<double>& edge3Values, const std::array<double, 3>& fsos) const;
+
+	static std::vector<std::array<double, 3>> getNullSpaceBasis(const Matrix33& matrix, double tolerance = 1.e-10) noexcept;
 };
