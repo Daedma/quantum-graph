@@ -4,72 +4,84 @@
 #include <Mathter/Decompositions/DecomposeSVD.hpp>
 
 #include <algorithm>
-#include <thread>
-#include <future>
 
 std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const
 {
 	std::vector<double> eigenvalues;
-	size_t num_threads = std::thread::hardware_concurrency(); // Количество доступных потоков
-	std::vector<std::future<std::vector<double>>> futures;
-
-	// Разделение диапазона на поддиапазоны для параллельной обработки
-	double range = higherBound - lowerBound;
-	double subrange = range / num_threads;
-
-	for (size_t i = 0; i != num_threads; ++i)
+	for (; lowerBound < higherBound; lowerBound += step)
 	{
-		double subLower = lowerBound + i * subrange;
-		double subHigher = (i == num_threads - 1) ? higherBound : subLower + subrange;
-
-		futures.emplace_back(std::async(std::launch::async, [this, subLower, subHigher, step, error, maxIter]() {
-			std::vector<double> local_eigenvalues;
-			for (double current = subLower; current < subHigher; current += step)
+		double detLeft = characteristicDeterminantSignSafe(lowerBound, error, true);
+		double detRight = characteristicDeterminantSignSafe(lowerBound + step, error, true);
+		if (detRight * detLeft <= 0)
+		{
+			double detError = error;
+			double left = lowerBound, right = lowerBound + step;
+			for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it)
 			{
-				double detLeft = characteristicDeterminant(current, error);
-				double detRight = characteristicDeterminant(current + step, error);
-				if (detRight * detLeft <= 0)
+				double midlle = (left + right) * 0.5;
+				double detMiddle = characteristicDeterminantSignSafe(midlle, detError, false);
+				if (detMiddle * detLeft <= 0)
 				{
-					double detError = error;
-					double left = current, right = current + step;
-					for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it)
-					{
-						double midlle = (left + right) * 0.5;
-						double detMiddle = characteristicDeterminant(midlle, detError);
-						while ((detMiddle - detError) * (detMiddle + detError) <= 0)
-						{
-							detError *= 0.5;
-							detMiddle = characteristicDeterminant(midlle, detError);
-						}
-						if (detMiddle * detLeft <= 0)
-						{
-							right = midlle;
-							detRight = detMiddle;
-						}
-						else
-						{
-							left = midlle;
-							detLeft = detMiddle;
-						}
-					}
-					local_eigenvalues.emplace_back((left + right) * 0.5);
+					right = midlle;
+					detRight = detMiddle;
+				}
+				else
+				{
+					left = midlle;
+					detLeft = detMiddle;
 				}
 			}
-			return local_eigenvalues;
-			}));
-	}
+			eigenvalues.emplace_back((left + right) * 0.5);
 
-	// Сбор результатов из всех потоков
-	for (auto& future : futures)
+		}
+	}
+	return eigenvalues;
+}
+
+std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, size_t windowSize, double initialStep, double error, size_t maxIter) const
+{
+	std::vector<double> eigenvalues;
+
+	std::vector<double> window(windowSize, initialStep);
+	size_t windowIndex = 0;
+	double lastEigenvalue = lowerBound;
+	double currentStep = initialStep;
+
+	for (; lowerBound < higherBound; lowerBound += currentStep)
 	{
-		std::vector<double> local_eigenvalues = future.get();
-		eigenvalues.insert(eigenvalues.end(), local_eigenvalues.begin(), local_eigenvalues.end());
+		double detLeft = characteristicDeterminantSignSafe(lowerBound, error, true);
+		double detRight = characteristicDeterminantSignSafe(lowerBound + currentStep, error, true);
+		if (detRight * detLeft <= 0)
+		{
+			double detError = error;
+			double left = lowerBound, right = lowerBound + currentStep;
+			for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it)
+			{
+				double midlle = (left + right) * 0.5;
+				double detMiddle = characteristicDeterminantSignSafe(midlle, detError, false);
+				if (detMiddle * detLeft <= 0)
+				{
+					right = midlle;
+					detRight = detMiddle;
+				}
+				else
+				{
+					left = midlle;
+					detLeft = detMiddle;
+				}
+			}
+			double eigenvalue = (left + right) * 0.5;
+			double diff = eigenvalue - lastEigenvalue;
+			if (diff > error)
+			{
+				window[windowIndex] = diff;
+				windowIndex = (windowIndex + 1) % windowSize;
+				currentStep = *std::min_element(window.cbegin(), window.cend());
+				eigenvalues.emplace_back(eigenvalue);
+				lastEigenvalue = eigenvalue;
+			}
+		}
 	}
-
-	// Сортировка и удаление дубликатов
-	std::sort(eigenvalues.begin(), eigenvalues.end());
-	eigenvalues.erase(std::unique(eigenvalues.begin(), eigenvalues.end()), eigenvalues.end());
-
 	return eigenvalues;
 }
 

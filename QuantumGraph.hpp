@@ -5,12 +5,8 @@
 #include <optional>
 #include <Mathter/Matrix.hpp>
 
-// TODO : Распараллелить вычисление C1, S2, S3 при расчете определителя
-// TODO : Распараллелить поиск собственных значений
 // TODO : Добавить обработку случая кратных собственных значений
 // TODO : Добавить параметризацию граничных условий
-// TODO : Подумать над адаптивным шагом при поиске собственных значений
-
 
 class QuantumGraph
 {
@@ -30,7 +26,14 @@ public:
 		m_potentials({ q1, q2, q3 })
 	{}
 
-	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const;
+	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter = 1000) const;
+
+	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, size_t windowSize, double initialStep, double error, size_t maxIter = 1000) const;
+
+	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double error = 1.e-6) const
+	{
+		return calcEigenvalues(lowerBound, higherBound, 2, 0.1, error, 1000);
+	}
 
 	GraphFunction calcEigenfunction(double lambda, size_t numOfNodes, double tolerance) const;
 
@@ -39,12 +42,12 @@ public:
 private:
 	StateType getCosValueAtPI(size_t edge, double lambda, double error) const
 	{
-		return getSolutionValuesAtPI(edge, lambda, { 1, 0 }, error, 100);
+		return getSolutionValuesAtPI(edge, lambda, { 1, 0 }, error, 3);
 	}
 
 	StateType getSinValueAtPI(size_t edge, double lambda, double error) const
 	{
-		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, error, 100);
+		return getSolutionValuesAtPI(edge, lambda, { 0, 1 }, error, 3);
 	}
 
 	StateType getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, double error, size_t baseNumPoints) const;
@@ -72,6 +75,25 @@ private:
 	}
 
 	std::vector<double> getSolutionValues(size_t edge, double lambda, const StateType& initConditions, size_t numPoints) const;
+
+	double characteristicDeterminantSignSafe(double lambda, double& error, bool saveError = true) const
+	{
+		double localError = error;
+		double* errorToUse = saveError ? &localError : &error;
+		double result = characteristicDeterminant(lambda, *errorToUse);
+		while ((result - *errorToUse) * (result + *errorToUse) <= 0)
+		{
+			*errorToUse *= 0.5;
+			result = characteristicDeterminant(lambda, *errorToUse);
+		}
+		return result;
+	}
+
+	double characteristicDeterminantSignSafe(double lambda, const double& error) const
+	{
+		double localError = error;
+		return characteristicDeterminantSignSafe(lambda, localError, true);
+	}
 
 	static std::array<double, 3> getNullSpaceBasis(const Matrix33& matrix, double tolerance = 1.e-10) noexcept;
 };

@@ -35,8 +35,8 @@ int main(int argc, char const* argv[])
 	constexpr double lowerBound = 0.0;
 	constexpr double upperBound = 200.0;
 	constexpr double step = 0.1;
-	constexpr double error = 1.e-6;
-	constexpr size_t maxIter = 10000;
+	constexpr double error = 1.e-5;
+	constexpr size_t maxIter = 1000;
 
 	std::vector<double> analytical;
 	for (int i = 0;;++i)
@@ -59,7 +59,8 @@ int main(int argc, char const* argv[])
         [](double) {return 0.;}
     };
 
-	std::vector<double> numerical = graph.calcEigenvalues(lowerBound, upperBound, step, error, maxIter);
+	// std::vector<double> numerical = graph.calcEigenvalues(lowerBound, upperBound, step, error, maxIter);
+	std::vector<double> numerical = graph.calcEigenvalues(lowerBound, upperBound, 2, step, error, maxIter);
 
 	double maxDiff = 0.0;
 	size_t eigenvaluesCount = std::min(analytical.size(), numerical.size());
