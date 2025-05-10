@@ -8,19 +8,14 @@
 
 double get_null_ev(int n, int k) noexcept
 {
-	using boost::math::double_constants::one_div_pi;
-	static const double main_term = one_div_pi * std::asin(std::sqrt(2. / 3.));
 	double ev;
 	switch (k)
 	{
 	case 1:
-		ev = main_term + n;
+		ev = n;
 		break;
 	case 2:
-		ev = -main_term + n + 1;
-		break;
-	case 3:
-		ev = n + 1;
+		ev = n + 0.5;
 		break;
 	default:
 		ev = NAN;
@@ -32,16 +27,16 @@ double get_null_ev(int n, int k) noexcept
 
 int main(int argc, char const* argv[])
 {
-	constexpr double lowerBound = 0.0;
-	constexpr double upperBound = 10000.0;
+	constexpr double lowerBound = -1.0;
+	constexpr double upperBound = 200.0;
 	constexpr double step = 0.1;
-	constexpr double error = 1.e-6;
-	constexpr size_t maxIter = 1000;
+	constexpr double error = 1.e-7;
+	constexpr size_t maxIter = 10000;
 
 	std::vector<double> analytical;
 	for (int i = 0;;++i)
 	{
-		double ev = get_null_ev(i / 3, i % 3 + 1);
+		double ev = i * i;
 		assert(!std::isnan(ev));
 		if (ev >= lowerBound && ev <= upperBound)
 		{
@@ -56,7 +51,10 @@ int main(int argc, char const* argv[])
 	QuantumGraph graph{
 		[](double) {return 0.;},
 		[](double) {return 0.;},
-		[](double) {return 0.;}
+		[](double) {return 0.;},
+		QuantumGraph::eBoundaryCondition::Neumann,
+		QuantumGraph::eBoundaryCondition::Neumann,
+		QuantumGraph::eBoundaryCondition::Neumann
 	};
 
 	// std::vector<double> numerical = graph.calcEigenvalues(lowerBound, upperBound, step, error, maxIter);

@@ -72,7 +72,7 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 			}
 			double eigenvalue = (left + right) * 0.5;
 			double diff = eigenvalue - lastEigenvalue;
-			if (diff > error)
+			if (diff > 2 * error)
 			{
 				window[windowIndex] = diff;
 				windowIndex = (windowIndex + 1) % windowSize;
@@ -186,21 +186,21 @@ double QuantumGraph::characteristicDeterminant(double lambda, double error) cons
 	double initial_error = error / 3.0;
 
 	// Первое вычисление значений с начальной погрешностью
-	StateType C1 = getCosValueAtPI(1, lambda, initial_error);
-	StateType S2 = getSinValueAtPI(2, lambda, initial_error);
-	StateType S3 = getSinValueAtPI(3, lambda, initial_error);
+	StateType sval1 = getSolutionValueAtPI(1, lambda, initial_error);
+	StateType sval2 = getSolutionValueAtPI(2, lambda, initial_error);
+	StateType sval3 = getSolutionValueAtPI(3, lambda, initial_error);
 
 	// Вычисление определителя
-	double result = C1[1] * S2[0] * S3[0]
-		+ C1[0] * S2[1] * S3[0]
-		+ C1[0] * S2[0] * S3[1];
+	double result = sval1[1] * sval2[0] * sval3[0]
+		+ sval1[0] * sval2[1] * sval3[0]
+		+ sval1[0] * sval2[0] * sval3[1];
 
 	// Оценка погрешности на основе частных производных
-	double delta_C1 = std::abs(S2[0] * S3[0]) + std::abs(S2[1] * S3[0] + S2[0] * S3[1]);
-	double delta_S2 = std::abs(C1[1] * S3[0] + C1[0] * S3[1]) + std::abs(C1[0] * S3[0]);
-	double delta_S3 = std::abs(C1[1] * S2[0] + C1[0] * S2[1]) + std::abs(C1[0] * S2[0]);
+	double delta_sval1 = std::abs(sval2[1] * sval3[0] + sval2[0] * sval3[1]) + std::abs(sval2[0] * sval3[0]);
+	double delta_sval2 = std::abs(sval1[1] * sval3[0] + sval1[0] * sval3[1]) + std::abs(sval1[0] * sval3[0]);
+	double delta_sval3 = std::abs(sval1[1] * sval2[0] + sval1[0] * sval2[1]) + std::abs(sval1[0] * sval2[0]);
 
-	double max_coefficient = std::max({ delta_C1, delta_S2, delta_S3 });
+	double max_coefficient = std::max({ delta_sval1, delta_sval2, delta_sval3 });
 
 	// Корректировка погрешности, если оценка превышает заданную погрешность
 	if (max_coefficient * initial_error > error)
@@ -208,14 +208,14 @@ double QuantumGraph::characteristicDeterminant(double lambda, double error) cons
 		double corrected_error = error / (3.0 * max_coefficient);
 
 		// Повторное вычисление значений с скорректированной погрешностью
-		C1 = getCosValueAtPI(1, lambda, corrected_error);
-		S2 = getSinValueAtPI(2, lambda, corrected_error);
-		S3 = getSinValueAtPI(3, lambda, corrected_error);
+		sval1 = getSolutionValueAtPI(1, lambda, corrected_error);
+		sval2 = getSolutionValueAtPI(2, lambda, corrected_error);
+		sval3 = getSolutionValueAtPI(3, lambda, corrected_error);
 
 		// Повторное вычисление определителя
-		result = C1[1] * S2[0] * S3[0]
-			+ C1[0] * S2[1] * S3[0]
-			+ C1[0] * S2[0] * S3[1];
+		result = sval1[1] * sval2[0] * sval3[0]
+			+ sval1[0] * sval2[1] * sval3[0]
+			+ sval1[0] * sval2[0] * sval3[1];
 	}
 
 	return result;

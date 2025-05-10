@@ -87,3 +87,14 @@ target_include_directories(eigenvalues PUBLIC "C:/Libs/Mathter/include")
 target_include_directories(eigenvalues PUBLIC "C:/Libs/boost_1_81_0")
 
 target_compile_definitions(eigenvalues PUBLIC BOOST_JSON_NO_LIB)
+
+
+add_executable("dirichlet" dirichlet.cpp QuantumGraph.cpp)
+
+target_include_directories(dirichlet PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_include_directories(dirichlet PUBLIC "C:/Libs/Mathter/include")
+
+target_include_directories(dirichlet PUBLIC "C:/Libs/boost_1_81_0")
+
+target_compile_definitions(dirichlet PUBLIC BOOST_JSON_NO_LIB)

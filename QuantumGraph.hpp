@@ -2,10 +2,9 @@
 #include <functional>
 #include <array>
 #include <vector>
-#include <optional>
+#include <iostream>
 #include <Mathter/Matrix.hpp>
 
-// TODO : Добавить обработку случая кратных собственных значений
 // TODO : Добавить параметризацию граничных условий
 
 class QuantumGraph
@@ -16,14 +15,32 @@ class QuantumGraph
 
 	using Matrix33 = mathter::Matrix<double, 3, 3, mathter::eMatrixOrder::PRECEDE_VECTOR>;
 
+public:
+	enum class eBoundaryCondition
+	{
+		Dirichlet,
+		Neumann
+	};
+
+	static constexpr std::array<eBoundaryCondition, 3> dirichletOnly = { eBoundaryCondition::Dirichlet, eBoundaryCondition::Dirichlet, eBoundaryCondition::Dirichlet };
+
+	static constexpr std::array<eBoundaryCondition, 3> neumannOnly = { eBoundaryCondition::Neumann, eBoundaryCondition::Neumann, eBoundaryCondition::Neumann };
+
 private:
 	std::array<std::function<double(double)>, 3> m_potentials;
+
+	std::array<eBoundaryCondition, 3> m_boundaryConditions;
 
 public:
 	using GraphFunction = std::function<std::array<double, 3>(const std::array<double, 3>&)>;
 
+	QuantumGraph(std::function<double(double)> q1, std::function<double(double)> q2, std::function<double(double)> q3,
+		eBoundaryCondition bc1, eBoundaryCondition bc2, eBoundaryCondition bc3) noexcept :
+		m_potentials({ q1, q2, q3 }), m_boundaryConditions({ bc1, bc2, bc3 })
+	{}
+
 	QuantumGraph(std::function<double(double)> q1, std::function<double(double)> q2, std::function<double(double)> q3) noexcept :
-		m_potentials({ q1, q2, q3 })
+		QuantumGraph(q1, q2, q3, eBoundaryCondition::Neumann, eBoundaryCondition::Dirichlet, eBoundaryCondition::Dirichlet)
 	{}
 
 	std::vector<double> calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter = 1000) const;
@@ -52,6 +69,12 @@ private:
 
 	StateType getSolutionValuesAtPI(size_t edge, double lambda, const StateType& initConditions, double error, size_t baseNumPoints) const;
 
+	StateType getSolutionValueAtPI(size_t edge, double lambda, double error) const
+	{
+		StateType initConditions = m_boundaryConditions[edge - 1] == eBoundaryCondition::Neumann ? StateType{ 1, 0 } : StateType{ 0, 1 };
+		return getSolutionValuesAtPI(edge, lambda, initConditions, error, 3);
+	}
+
 	static auto createSturmLiouvilleODE(std::function<double(double)> q, double lambda) noexcept
 	{
 		return [q, lambda](const StateType& x, StateType& dxdt, double t) {
@@ -62,14 +85,14 @@ private:
 
 	Matrix33 getSystemMatrix(double lambda, double error) const
 	{
-		StateType C1 = getCosValueAtPI(1, lambda, error);
-		StateType S2 = getSinValueAtPI(2, lambda, error);
-		StateType S3 = getSinValueAtPI(3, lambda, error);
+		StateType sval1 = getSolutionValueAtPI(1, lambda, error);
+		StateType sval2 = getSolutionValueAtPI(2, lambda, error);
+		StateType sval3 = getSolutionValueAtPI(3, lambda, error);
 
 		return {
-			C1[0], -S2[0], 0.,
-			0., S2[0], -S3[0],
-			C1[1], S2[1], S3[1]
+			sval1[0], -sval2[0], 0.,
+			0., sval2[0], -sval3[0],
+			sval1[1], sval2[1], sval3[1]
 		};
 	}
 
@@ -77,13 +100,18 @@ private:
 
 	double characteristicDeterminantSignSafe(double lambda, double& error, bool saveError = true) const
 	{
+		constexpr double minError = 1.e-12;
 		double localError = error;
 		double* errorToUse = saveError ? &localError : &error;
 		double result = characteristicDeterminant(lambda, *errorToUse);
-		while ((result - *errorToUse) * (result + *errorToUse) <= 0)
+		while ((result - *errorToUse) * (result + *errorToUse) < 0 && *errorToUse > minError)
 		{
 			*errorToUse *= 0.5;
 			result = characteristicDeterminant(lambda, *errorToUse);
+		}
+		if (*errorToUse <= minError)
+		{
+			result = 0.;
 		}
 		return result;
 	}
