@@ -107,3 +107,14 @@ target_include_directories(adaptive-step PUBLIC "C:/Libs/Mathter/include")
 target_include_directories(adaptive-step PUBLIC "C:/Libs/boost_1_81_0")
 
 target_compile_definitions(adaptive-step PUBLIC BOOST_JSON_NO_LIB)
+
+
+add_executable("error-control" error_control.cpp QuantumGraph.cpp)
+
+target_include_directories(error-control PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_include_directories(error-control PUBLIC "C:/Libs/Mathter/include")
+
+target_include_directories(error-control PUBLIC "C:/Libs/boost_1_81_0")
+
+target_compile_definitions(error-control PUBLIC BOOST_JSON_NO_LIB)
