@@ -31,14 +31,14 @@ double get_null_ev(int n, int k) noexcept
 
 int main(int argc, char const* argv[])
 {
-	constexpr double lowerBound = 0.0;
-	constexpr double upperBound = 10000.0;
+	constexpr double lowerBound = 999999.0;
+	constexpr double upperBound = 1100000.0;
 
-	constexpr double errorStart = 1.e-10;
-	constexpr double errorEnd = 1.e-3;
+	constexpr double errorStart = 1.e-6;
+	constexpr double errorEnd = 1.e+0;
 	constexpr double errorStep = 1.e+1;
 
-	constexpr double step = 0.1;
+	constexpr double step = 100.;
 	constexpr size_t maxIter = 10000;
 
 	std::vector<double> analytical;
@@ -56,12 +56,14 @@ int main(int argc, char const* argv[])
 		}
 	}
 
-	std::ofstream ofs("experiments/error-control-test.csv");
+	std::string filename = "experiments/error-control-test-" +
+		std::to_string(static_cast<int>(lowerBound)) + "-" +
+		std::to_string(static_cast<int>(upperBound)) + ".csv";
+	std::ofstream ofs(filename);
 	ofs << "Error,MaxDifference\n";
 
 	for (double error = errorStart; error <= errorEnd; error *= errorStep)
 	{
-
 		QuantumGraph graph{
 			[](double) { return 0.; },
 			[](double) { return 0.; },
@@ -88,6 +90,6 @@ int main(int argc, char const* argv[])
 	}
 
 	ofs.close();
-	std::clog << "Results written to experiments/error-control-test.csv\n";
+	std::clog << "Results written to " << filename << '\n';
 	return 0;
 }

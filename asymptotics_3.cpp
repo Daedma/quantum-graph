@@ -47,11 +47,10 @@ double get_null_ev(int n, int k) noexcept
 
 int main(int argc, char const* argv[])
 {
-	constexpr double lowerBound = 24600.;
-	constexpr double upperBound = 25100.;
-	constexpr double step = 50.;
-	constexpr size_t depth = 25;
-	constexpr size_t numberOfNobes = 6000;
+	double lowerBound = 990000.0;
+	double upperBound = lowerBound + 1.e+5;
+	constexpr double step = 100.;
+	constexpr double error = 1.e-6;
 
 	if (argc != 2)
 	{
@@ -60,21 +59,27 @@ int main(int argc, char const* argv[])
 	}
 	int num_of_graphs = std::atoi(argv[1]);
 
-	const std::string filename = "ev3-" + std::to_string(static_cast<int>(lowerBound)) + "-" +
-		std::to_string(static_cast<int>(upperBound)) + "-" + std::to_string(static_cast<int>(step)) + "-" +
-		std::to_string(depth) + ".csv";
+	const std::string filename = "experiments/asymptotics-" + std::to_string(static_cast<int>(lowerBound)) + "-" +
+		std::to_string(static_cast<int>(upperBound)) + ".csv";
 
 	std::ofstream ofs{ filename };
 	ofs << std::setprecision(17);
 	ofs << "a1, a2, a3, eigenvalues,\n";
 	ofs << "0., 0., 0.,";
-	for (int i = 0;;++i)
+
+	constexpr double span = 120.;
+	for (int i = std::sqrt(lowerBound);;++i)
 	{
-		double ev = get_null_ev(i / 3, i % 3 + 1);
-		assert(!std::isnan(ev));
+		double ev = get_null_ev(i, 1);
 		if (ev >= lowerBound && ev <= upperBound)
 		{
-			ofs << ev << ',';
+			lowerBound = get_null_ev(i, 1) - span;
+			upperBound = get_null_ev(i, 3) + span;
+			ofs <<
+				get_null_ev(i, 1) << ',' <<
+				get_null_ev(i, 2) << ',' <<
+				get_null_ev(i, 3) << ',';
+			break;
 		}
 		if (ev > upperBound)
 		{
@@ -93,8 +98,7 @@ int main(int argc, char const* argv[])
 		auto a2 = dist(gen);
 		auto a3 = dist(gen);
 		auto graph = gen_graph(a1, a2, a3);
-		graph.setNumberOfNodes(numberOfNobes);
-		auto ev = graph.calcEigenvalues(lowerBound, upperBound, step, depth);
+		auto ev = graph.calcEigenvalues(lowerBound, upperBound, 2, step, error);
 		std::ofstream ofs{ filename, std::ios::app };
 		ofs << std::setprecision(17);
 		ofs << a1 << ',' << a2 << ',' << a3 << ',';

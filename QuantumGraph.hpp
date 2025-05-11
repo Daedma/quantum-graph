@@ -100,19 +100,25 @@ private:
 
 	double characteristicDeterminantSignSafe(double lambda, double& error, bool saveError = true) const
 	{
-		constexpr double minError = 1.e-30;
+		constexpr size_t maxIter = 100;
+		size_t it = 0;
+
 		double localError = error;
 		double* errorToUse = saveError ? &localError : &error;
+
 		double result = characteristicDeterminant(lambda, *errorToUse);
-		while ((result - *errorToUse) * (result + *errorToUse) < 0 && *errorToUse > minError)
+		while ((result - *errorToUse) * (result + *errorToUse) < 0 && it != maxIter)
 		{
 			*errorToUse *= 0.5;
 			result = characteristicDeterminant(lambda, *errorToUse);
+			++it;
 		}
-		if (*errorToUse <= minError)
+
+		if (it == maxIter)
 		{
 			result = 0.;
 		}
+		
 		return result;
 	}
 

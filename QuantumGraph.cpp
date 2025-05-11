@@ -7,19 +7,25 @@
 
 std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, double step, double error, size_t maxIter) const
 {
+	constexpr double initialDetError = 1.e-3;
+
 	std::vector<double> eigenvalues;
 	for (; lowerBound < higherBound; lowerBound += step)
 	{
+		double detError = initialDetError;
 		double detLeft = characteristicDeterminantSignSafe(lowerBound, error, true);
 		double detRight = characteristicDeterminantSignSafe(lowerBound + step, error, true);
 		if (detRight * detLeft <= 0)
 		{
-			double detError = error;
 			double left = lowerBound, right = lowerBound + step;
 			for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it)
 			{
 				double midlle = (left + right) * 0.5;
 				double detMiddle = characteristicDeterminantSignSafe(midlle, detError, false);
+				if (detMiddle == 0.)
+				{
+					left = right = midlle;
+				}
 				if (detMiddle * detLeft <= 0)
 				{
 					right = midlle;
@@ -40,6 +46,8 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 
 std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double higherBound, size_t windowSize, double initialStep, double error, size_t maxIter) const
 {
+	constexpr double initialDetError = 1.e-3;
+
 	std::vector<double> eigenvalues;
 
 	std::vector<double> window(windowSize, initialStep);
@@ -49,11 +57,11 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 
 	for (; lowerBound < higherBound; lowerBound += currentStep)
 	{
-		double detLeft = characteristicDeterminantSignSafe(lowerBound, error, true);
-		double detRight = characteristicDeterminantSignSafe(lowerBound + currentStep, error, true);
+		double detError = initialDetError;
+		double detLeft = characteristicDeterminantSignSafe(lowerBound, detError, true);
+		double detRight = characteristicDeterminantSignSafe(lowerBound + currentStep, detError, true);
 		if (detRight * detLeft <= 0)
 		{
-			double detError = error;
 			double left = lowerBound, right = lowerBound + currentStep;
 			for (size_t it = 0; it != maxIter && (right - left) > 2 * error; ++it)
 			{
@@ -62,7 +70,6 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 				if (detMiddle == 0.)
 				{
 					left = right = midlle;
-					break;
 				}
 				else if (detMiddle * detLeft <= 0)
 				{
