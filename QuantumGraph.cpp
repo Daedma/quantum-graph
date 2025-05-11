@@ -59,7 +59,12 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 			{
 				double midlle = (left + right) * 0.5;
 				double detMiddle = characteristicDeterminantSignSafe(midlle, detError, false);
-				if (detMiddle * detLeft <= 0)
+				if (detMiddle == 0.)
+				{
+					left = right = midlle;
+					break;
+				}
+				else if (detMiddle * detLeft <= 0)
 				{
 					right = midlle;
 					detRight = detMiddle;
@@ -114,7 +119,7 @@ QuantumGraph::StateType QuantumGraph::getSolutionValuesAtPI(size_t edge, double 
 	StateType x = initConditions;
 	auto system = createSturmLiouvilleODE(m_potentials[edge - 1], lambda);
 	auto stepper = boost::numeric::odeint::make_dense_output(error, error, boost::numeric::odeint::runge_kutta_dopri5<StateType>());
-	boost::numeric::odeint::integrate_const(stepper, system, x, 0., PI, initialStep);
+	size_t steps = boost::numeric::odeint::integrate_const(stepper, system, x, 0., PI, initialStep);
 	return x;
 }
 
@@ -183,39 +188,44 @@ std::vector<std::array<double, 3>> QuantumGraph::getNullSpaceBasis(const Matrix3
 double QuantumGraph::characteristicDeterminant(double lambda, double error) const
 {
 	// Начальная погрешность для вычисления C1, S2, S3
-	double initial_error = error / 3.0;
+	double initialError = error / 9.0;
 
 	// Первое вычисление значений с начальной погрешностью
-	StateType sval1 = getSolutionValueAtPI(1, lambda, initial_error);
-	StateType sval2 = getSolutionValueAtPI(2, lambda, initial_error);
-	StateType sval3 = getSolutionValueAtPI(3, lambda, initial_error);
+	StateType sol1 = getSolutionValueAtPI(1, lambda, initialError);
+	StateType sol2 = getSolutionValueAtPI(2, lambda, initialError);
+	StateType sol3 = getSolutionValueAtPI(3, lambda, initialError);
 
 	// Вычисление определителя
-	double result = sval1[1] * sval2[0] * sval3[0]
-		+ sval1[0] * sval2[1] * sval3[0]
-		+ sval1[0] * sval2[0] * sval3[1];
+	double result = sol1[1] * sol2[0] * sol3[0]
+		+ sol1[0] * sol2[1] * sol3[0]
+		+ sol1[0] * sol2[0] * sol3[1];
 
 	// Оценка погрешности на основе частных производных
-	double delta_sval1 = std::abs(sval2[1] * sval3[0] + sval2[0] * sval3[1]) + std::abs(sval2[0] * sval3[0]);
-	double delta_sval2 = std::abs(sval1[1] * sval3[0] + sval1[0] * sval3[1]) + std::abs(sval1[0] * sval3[0]);
-	double delta_sval3 = std::abs(sval1[1] * sval2[0] + sval1[0] * sval2[1]) + std::abs(sval1[0] * sval2[0]);
+	double derivativeSol11 = std::abs(sol2[0] * sol3[0]);
+	double derivativeSol21 = std::abs(sol1[0] * sol3[0]);
+	double derivativeSol31 = std::abs(sol1[0] * sol2[0]);
 
-	double max_coefficient = std::max({ delta_sval1, delta_sval2, delta_sval3 });
+	double derivativeSol10 = std::abs(sol2[1] * sol3[0] + sol2[0] * sol3[1]);
+	double derivativeSol20 = std::abs(sol1[1] * sol3[0] + sol1[0] * sol3[1]);
+	double derivativeSol30 = std::abs(sol1[1] * sol2[0] + sol1[0] * sol2[1]);
+
+	double derivativeSum = derivativeSol11 + derivativeSol21 + derivativeSol31
+		+ derivativeSol20 + derivativeSol30 + derivativeSol10;
 
 	// Корректировка погрешности, если оценка превышает заданную погрешность
-	if (max_coefficient * initial_error > error)
+	if (3.0 * derivativeSum * initialError > error)
 	{
-		double corrected_error = error / (3.0 * max_coefficient);
+		double correctedError = error / (3.0 * derivativeSum);
 
 		// Повторное вычисление значений с скорректированной погрешностью
-		sval1 = getSolutionValueAtPI(1, lambda, corrected_error);
-		sval2 = getSolutionValueAtPI(2, lambda, corrected_error);
-		sval3 = getSolutionValueAtPI(3, lambda, corrected_error);
+		sol1 = getSolutionValueAtPI(1, lambda, correctedError);
+		sol2 = getSolutionValueAtPI(2, lambda, correctedError);
+		sol3 = getSolutionValueAtPI(3, lambda, correctedError);
 
 		// Повторное вычисление определителя
-		result = sval1[1] * sval2[0] * sval3[0]
-			+ sval1[0] * sval2[1] * sval3[0]
-			+ sval1[0] * sval2[0] * sval3[1];
+		result = sol1[1] * sol2[0] * sol3[0]
+			+ sol1[0] * sol2[1] * sol3[0]
+			+ sol1[0] * sol2[0] * sol3[1];
 	}
 
 	return result;

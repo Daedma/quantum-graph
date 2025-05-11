@@ -5,7 +5,6 @@
 #include <boost/math/constants/constants.hpp>
 #include "QuantumGraph.hpp"
 
-
 double get_null_ev(int n, int k) noexcept
 {
 	using boost::math::double_constants::one_div_pi;
@@ -34,12 +33,16 @@ int main(int argc, char const* argv[])
 {
 	constexpr double lowerBound = 0.0;
 	constexpr double upperBound = 10000.0;
+
+	constexpr double errorStart = 1.e-10;
+	constexpr double errorEnd = 1.e-3;
+	constexpr double errorStep = 1.e+1;
+
 	constexpr double step = 0.1;
-	constexpr double error = 1.e-6;
-	constexpr size_t maxIter = 1000;
+	constexpr size_t maxIter = 10000;
 
 	std::vector<double> analytical;
-	for (int i = 0;;++i)
+	for (int i = 0;; ++i)
 	{
 		double ev = get_null_ev(i / 3, i % 3 + 1);
 		assert(!std::isnan(ev));
@@ -53,29 +56,38 @@ int main(int argc, char const* argv[])
 		}
 	}
 
-	QuantumGraph graph{
-		[](double) {return 0.;},
-		[](double) {return 0.;},
-		[](double) {return 0.;}
-	};
+	std::ofstream ofs("experiments/error-control-test.csv");
+	ofs << "Error,MaxDifference\n";
 
-	// std::vector<double> numerical = graph.calcEigenvalues(lowerBound, upperBound, step, error, maxIter);
-	std::vector<double> numerical = graph.calcEigenvalues(lowerBound, upperBound, 2, step, error, maxIter);
-
-	double maxDiff = 0.0;
-	size_t eigenvaluesCount = std::min(analytical.size(), numerical.size());
-
-	std::cout << std::setprecision(17);
-
-	for (size_t i = 0; i != eigenvaluesCount; ++i)
+	for (double error = errorStart; error <= errorEnd; error *= errorStep)
 	{
-		double diff = std::abs(analytical[i] - numerical[i]);
-		if (diff > maxDiff)
+
+		QuantumGraph graph{
+			[](double) { return 0.; },
+			[](double) { return 0.; },
+			[](double) { return 0.; }
+		};
+
+		std::vector<double> numerical = graph.calcEigenvalues(lowerBound, upperBound, 2, step, error, maxIter);
+
+		double maxDiff = 0.0;
+		size_t eigenvaluesCount = std::min(analytical.size(), numerical.size());
+
+		for (size_t i = 0; i != eigenvaluesCount; ++i)
 		{
-			maxDiff = diff;
+			double diff = std::abs(analytical[i] - numerical[i]);
+			if (diff > maxDiff)
+			{
+				maxDiff = diff;
+			}
 		}
-		std::cout << analytical[i] << ' ' << numerical[i] << ' ' << diff << '\n';
+
+		ofs << error << ',' << maxDiff << '\n';
+
+		std::clog << "Error: " << error << ", Max difference: " << maxDiff << '\n';
 	}
 
-	std::cout << "Max difference: " << std::scientific << maxDiff << '\n';
+	ofs.close();
+	std::clog << "Results written to experiments/error-control-test.csv\n";
+	return 0;
 }

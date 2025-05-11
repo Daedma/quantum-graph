@@ -100,7 +100,7 @@ private:
 
 	double characteristicDeterminantSignSafe(double lambda, double& error, bool saveError = true) const
 	{
-		constexpr double minError = 1.e-12;
+		constexpr double minError = 1.e-30;
 		double localError = error;
 		double* errorToUse = saveError ? &localError : &error;
 		double result = characteristicDeterminant(lambda, *errorToUse);
