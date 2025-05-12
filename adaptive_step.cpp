@@ -8,7 +8,7 @@
 
 void runExperiment(const QuantumGraph& graph, const std::string& graphName, double lowerBound, double higherBound, double step, double error, size_t windowSize, const std::string& algorithm, std::mutex& fileMutex, std::ofstream& outputFile)
 {
-	constexpr size_t numRuns = 20;
+	constexpr size_t numRuns = 5;
 	size_t eigenvalueCount = 0;
 	double totalTime = 0.0;
 
@@ -47,13 +47,13 @@ int main()
 
 	// Define parameter sets (lowerBound, higherBound, step)
 	std::vector<std::tuple<double, double, double>> parameterSets = {
+		{ 0.0, 100.0, 0.001 },
 		{ 0.0, 100.0, 0.1 },
-		{ 100.0, 1000.0, 5.0 },
-		{ 1000.0, 5000.0, 15.0 }
+		{ 0.0, 1000.0, 0.1 }
 	};
 
 	constexpr double error = 1e-6;
-	constexpr size_t windowSize = 2;
+	constexpr size_t windowSize = 3;
 
 	// Open CSV file for writing results
 	std::ofstream outputFile("experiments/adaptive-step.csv");
@@ -81,6 +81,8 @@ int main()
 		}
 
 		threads.clear();
+
+		std::cout << "Completed experiments for lowerBound: " << lowerBound << ", higherBound: " << higherBound << ", step: " << step << "\n";
 	}
 
 	outputFile.close();

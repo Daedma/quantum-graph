@@ -10,7 +10,8 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 	constexpr double initialDetError = 1.e-3;
 
 	std::vector<double> eigenvalues;
-	for (; lowerBound < higherBound; lowerBound += step)
+	double lastEigenvalue = NAN;
+	for (; lowerBound + step <= higherBound; lowerBound += step)
 	{
 		double detError = initialDetError;
 		double detLeft = characteristicDeterminantSignSafe(lowerBound, error, true);
@@ -36,9 +37,15 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 					left = midlle;
 					detLeft = detMiddle;
 				}
-			}
-			eigenvalues.emplace_back((left + right) * 0.5);
 
+			}
+			double eigenvalue = (left + right) * 0.5;
+			double diff = eigenvalue - lastEigenvalue;
+			if (diff > 2 * error || std::isnan(lastEigenvalue))
+			{
+				eigenvalues.emplace_back(eigenvalue);
+				lastEigenvalue = eigenvalue;
+			}
 		}
 	}
 	return eigenvalues;
@@ -52,10 +59,10 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 
 	std::vector<double> window(windowSize, initialStep);
 	size_t windowIndex = 0;
-	double lastEigenvalue = lowerBound;
+	double lastEigenvalue = NAN;
 	double currentStep = initialStep;
 
-	for (; lowerBound < higherBound; lowerBound += currentStep)
+	for (; lowerBound + currentStep < higherBound; lowerBound += currentStep)
 	{
 		double detError = initialDetError;
 		double detLeft = characteristicDeterminantSignSafe(lowerBound, detError, true);
@@ -84,11 +91,14 @@ std::vector<double> QuantumGraph::calcEigenvalues(double lowerBound, double high
 			}
 			double eigenvalue = (left + right) * 0.5;
 			double diff = eigenvalue - lastEigenvalue;
-			if (diff > 2 * error)
+			if (diff > 2 * error || std::isnan(lastEigenvalue))
 			{
-				window[windowIndex] = diff;
-				windowIndex = (windowIndex + 1) % windowSize;
-				currentStep = *std::min_element(window.cbegin(), window.cend());
+				if (!std::isnan(lastEigenvalue))
+				{
+					window[windowIndex] = diff;
+					windowIndex = (windowIndex + 1) % windowSize;
+					currentStep = *std::min_element(window.cbegin(), window.cend());
+				}
 				eigenvalues.emplace_back(eigenvalue);
 				lastEigenvalue = eigenvalue;
 			}
@@ -220,9 +230,9 @@ double QuantumGraph::characteristicDeterminant(double lambda, double error) cons
 		+ derivativeSol20 + derivativeSol30 + derivativeSol10;
 
 	// Корректировка погрешности, если оценка превышает заданную погрешность
-	if (3.0 * derivativeSum * initialError > error)
+	if (derivativeSum * initialError > error)
 	{
-		double correctedError = error / (3.0 * derivativeSum);
+		double correctedError = error / derivativeSum;
 
 		// Повторное вычисление значений с скорректированной погрешностью
 		sol1 = getSolutionValueAtPI(1, lambda, correctedError);
