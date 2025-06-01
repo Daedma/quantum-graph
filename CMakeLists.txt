@@ -14,4 +14,7 @@ add_subdirectory(${QGRAPH_DEPS_DIRECTORY}/Mathter)
 
 add_library(qgraph QuantumGraph.cpp)
 
-target_include_directories(qgraph PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+target_include_directories(qgraph PUBLIC 
+	${CMAKE_CURRENT_SOURCE_DIR} 
+	${Boost_INCLUDE_DIRS} 
+	${QGRAPH_DEPS_DIRECTORY}/Mathter/include)
