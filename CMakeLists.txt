@@ -4,6 +4,7 @@ project("Quantum graphs" VERSION 0.3.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+find_package(OpenMP)
 add_subdirectory(matplotplusplus-1.2.1)
 
 
@@ -118,3 +119,5 @@ target_include_directories(error-control PUBLIC "C:/Libs/Mathter/include")
 target_include_directories(error-control PUBLIC "C:/Libs/boost_1_81_0")
 
 target_compile_definitions(error-control PUBLIC BOOST_JSON_NO_LIB)
+
+target_link_libraries(error-control PRIVATE OpenMP::OpenMP_CXX)

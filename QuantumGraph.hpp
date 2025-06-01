@@ -2,10 +2,7 @@
 #include <functional>
 #include <array>
 #include <vector>
-#include <iostream>
 #include <Mathter/Matrix.hpp>
-
-// TODO : Добавить параметризацию граничных условий
 
 class QuantumGraph
 {

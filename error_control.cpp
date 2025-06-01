@@ -5,6 +5,7 @@
 #include <random>
 #include <boost/math/constants/constants.hpp>
 #include "QuantumGraph.hpp"
+#include <map>
 
 
 QuantumGraph genGraph(double q) noexcept
@@ -45,11 +46,11 @@ std::vector<double> getEigenvalues(double lowerBound, double upperBound, double 
 	for (int i = 0;; ++i)
 	{
 		double ev = get_null_ev(i / 3, i % 3 + 1) + q;
-		if (ev >= lowerBound && ev <= upperBound)
+		if (ev >= lowerBound && ev < upperBound)
 		{
 			eigenvalues.emplace_back(ev);
 		}
-		if (ev > upperBound)
+		if (ev >= upperBound)
 		{
 			break;
 		}
@@ -60,13 +61,15 @@ std::vector<double> getEigenvalues(double lowerBound, double upperBound, double 
 
 int main(int argc, char const* argv[])
 {
-	constexpr double errorStart = 1.e-10;
+	constexpr double errorStart = 1.e-8;
 	constexpr double errorEnd = 1.e-2;
 	constexpr double errorStep = 1.e+1;
-	
+
+	constexpr double errorMax = 1.;
+
 	constexpr double step = 0.1;
 	constexpr size_t maxIter = 10000;
-	
+
 	if (argc != 4)
 	{
 		std::cerr << "Usage: " << argv[0] << " <number of graphs> <lower bound> <upper bound>\n";
@@ -76,17 +79,13 @@ int main(int argc, char const* argv[])
 	double lowerBound = std::atoi(argv[2]);
 	double upperBound = std::atoi(argv[3]);
 
-
-	std::string filename = "experiments/error-control-gentest-" +
-		std::to_string(static_cast<int>(lowerBound)) + "-" +
-		std::to_string(static_cast<int>(upperBound)) + ".csv";
-	std::ofstream ofs(filename);
-	ofs << "Graph,Error,MaxDifference\n";
+	std::map<double, double> resultErrors;
 
 	std::uniform_real_distribution<double> dist{ -1000., 0. };
 	std::mt19937 gen{ std::random_device{}() };
 
-	for (size_t i = 0; i != num_of_graphs; ++i)
+#pragma omp parallel for
+	for (int i = 0; i < num_of_graphs; ++i)
 	{
 		double q = dist(gen);
 
@@ -109,10 +108,27 @@ int main(int argc, char const* argv[])
 				}
 			}
 
-			ofs << i << ',' << error << ',' << maxDiff << '\n';
+#pragma omp critical
+			{
+				if (maxDiff > resultErrors[error] && maxDiff < errorMax)
+				{
+					resultErrors[error] = maxDiff;
+				}
 
-			std::clog << "Graph: " << i << ", Error: " << error << ", Max difference: " << maxDiff << '\n';
+				std::clog << "Graph: " << i << ", Error: " << error << ", Max difference: " << maxDiff << '\n';
+			}
 		}
+	}
+
+	std::string filename = "experiments/error-control-gentest-" +
+		std::to_string(static_cast<int>(lowerBound)) + "-" +
+		std::to_string(static_cast<int>(upperBound)) + ".csv";
+	std::ofstream ofs(filename);
+	ofs << "Error,MaxDifference\n";
+
+	for (const auto& [error, maxDiff] : resultErrors)
+	{
+		ofs << error << ',' << maxDiff << '\n';
 	}
 
 	ofs.close();
