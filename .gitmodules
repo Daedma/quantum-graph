@@ -1,0 +1,3 @@
+[submodule "Mathter"]
+	path = deps/Mathter
+	url = https://github.com/petiaccja/Mathter
